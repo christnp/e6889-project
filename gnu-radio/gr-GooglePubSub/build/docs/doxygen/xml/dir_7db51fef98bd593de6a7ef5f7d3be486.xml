@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.13">
+  <compounddef id="dir_7db51fef98bd593de6a7ef5f7d3be486" kind="dir">
+    <compoundname>GooglePubSub</compoundname>
+    <innerfile refid="api_8h">api.h</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/christnp/Development/e6889/project/gnu-radio/gr-GooglePubSub/include/GooglePubSub/"/>
+  </compounddef>
+</doxygen>

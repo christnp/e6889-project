@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<block>
+  <name>google_publisher_py_b</name>
+  <key>GooglePubSub_google_publisher_py_b</key>
+  <category>[GooglePubSub]</category>
+  <import>import GooglePubSub</import>
+  <make>GooglePubSub.google_publisher_py_b($project_id, $topic_name)</make>
+  <!-- Make one 'param' node for every Parameter you want settable from the GUI.
+       Sub-nodes:
+       * name
+       * key (makes the value accessible as $keyname, e.g. in the make node)
+       * type -->
+   <param>
+    <name>Project ID</name>
+    <key>project_id</key>
+    <type></type>
+  </param>
+  <param>
+     <name>Topic Name</name>
+     <key>topic_name</key>
+     <type></type>
+  </param>
+
+  <!-- Make one 'sink' node per input. Sub-nodes:
+       * name (an identifier for the GUI)
+       * type
+       * vlen
+       * optional (set to 1 for optional inputs) -->
+  <sink>
+    <name>in</name>
+     <type>byte</type>
+  </sink>
+
+  <!-- Make one 'source' node per output. Sub-nodes:
+       * name (an identifier for the GUI)
+       * type
+       * vlen
+       * optional (set to 1 for optional inputs) -->
+   <!--<source>
+    <name>out</name>
+    <type>></type>
+  </source>-->
+</block>
