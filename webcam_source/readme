@@ -1,1 +1,4 @@
-
+Code is written in java.
+Publishes to following Google Cloud PubSub topic: traffic-topic
+Subscribes to the following Google Cloud PubSub subscription: traffic-sub
+Needs GOOGLE_APPLICATION_CREDENTIALS environmental variable to publish and subscribe
