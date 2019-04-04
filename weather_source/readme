@@ -1,1 +1,5 @@
-
+Written in python
+Publishes to the following Google Cloud PubSub topic: weather-topic
+Client uses the following subscription: weather-sub
+Need to set GOOGLE_APPLICATION_CREDENTIALS
+Need to enter api key to access Dark Sky API (1000 requests/day at no cost)
