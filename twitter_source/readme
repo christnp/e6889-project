@@ -1,1 +1,5 @@
-
+Written in python
+Publishes to the following Google Cloud PubSub topic: twitter-topic
+Client uses the following subscription: twitter-sub
+Need to set GOOGLE_APPLICATION_CREDENTIALS
+Need to enter api key to access Twitter (free for developers)
