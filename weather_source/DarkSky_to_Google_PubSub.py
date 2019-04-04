@@ -12,10 +12,10 @@ Final Project
     Weather info corresponds to a point at the center of the Columbia COSMOS testbed
     (40.814778, -73.957148) or (40°48'53.2"N 73°57'25.7"W)
     
-    Dark Sky API is accessed using: 30fffcef194b5c2dcf808201da397c32
+    Dark Sky API is accessed using: API_SECRET_KEY
     
     The following is a sample API call that returns the current weather forecast:
-    https://api.darksky.net/forecast/30fffcef194b5c2dcf808201da397c32/37.8267,-122.4233
+    https://api.darksky.net/forecast/API_SECRET_KEY_GOES_HERE/37.8267,-122.4233
     
     You are required to display the message “Powered by Dark Sky” that links to 
     https://darksky.net/poweredby/ somewhere prominent in your app or service. 
