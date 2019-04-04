@@ -16,8 +16,6 @@ import edu.columbia.wak2116.webcamData;
 
 */
 
-
-
 public class main {
 
     public static void main(String[] args) throws Exception {
@@ -38,14 +36,18 @@ public class main {
                 data_array[x] = webcam.httpRequest(traffic_cam[x]);
                 //data_array[x].logToDisk();
 
-                if (data_array[x].getImage() != null) {
-                    //data_array[x].showImage();
-                    data_array[x].pubToBucket();
-                    data_array[x].pubToPubSub();
+                while (true) {
+                    if (data_array[x].getImage() != null) {
+                        //data_array[x].showImage();
+                        data_array[x].pubToBucket();
+                        data_array[x].pubToPubSub();
+                    }
+
+                Thread.sleep(1000*60*5);
+
                 }
+
             }
-
-
 
         }
         finally {
