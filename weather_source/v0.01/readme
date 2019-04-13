@@ -1,0 +1,10 @@
+1 week of weather data dumped using pubsub client v0.01 
+Comma delimited
+- timecode # time.gmtime() on the server pulling the data
+- icon used to summarize current weather
+- precipitation probability in %
+- summary = text desciption of currnent weather conditions 
+- temperature in degrees F
+- time #from the Darksky API response
+- uvIndex
+- wind speed in mph
