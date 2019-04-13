@@ -1,0 +1,4 @@
+1 week of twitter data dumped using Twitter_PubSub_Client v0.01
+Comma delimited
+- Datetime (from twitter API)
+- Tweet
