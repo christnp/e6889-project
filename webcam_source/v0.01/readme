@@ -1,0 +1,6 @@
+Last week of webcam data from Traffic_PubSub_Source
+Each line contains the filename of the image at gs://storage.kusmik.nyc
+It appears that things broke when the date rolled over from the 9th to the 10th
+
+This version of the source was always a placeholder.
+Planning to update source to process image file when it loads and feed tuples at increased rate.
