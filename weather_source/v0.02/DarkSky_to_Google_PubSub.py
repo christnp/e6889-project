@@ -56,7 +56,7 @@ topic = "projects/elene6889/topics/weather-topic"
 publisher = pubsub.PublisherClient()
 
 # Set Dark Sky weather API query string
-base_query = "https://api.darksky.net/forecast/30fffcef194b5c2dcf808201da397c32/40.814778,-73.957148"
+base_query = "https://api.darksky.net/forecast/INSERT_KEY_HERE/40.814778,-73.957148"
 query_options = "?exclude=minutely,hourly,daily,alerts,flags"
 
 while True:
