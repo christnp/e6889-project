@@ -1,0 +1,4 @@
+v0.02
+
+Origional datatime stamp was GMT
+Added "localdatetime" attribute that provides time of tweet in the format YYYY-MM-DD-HH-MM-SS
