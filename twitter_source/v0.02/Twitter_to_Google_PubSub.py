@@ -69,8 +69,8 @@ class MyStreamListener(tweepy.StreamListener):
             return False
 
 # configure Twitter stream
-auth = tweepy.OAuthHandler("0u0otpx8210Aq9xsOCk9nAZz9", "7EjAzixmA7Boncir8gwO3imPrzp4N18nYcpzPUaWm6igVw1d2G")
-auth.set_access_token("1099110306591199233-nXHUGDsoz6VUqbtF1YG0m1wZd0JDVl" , "y7suFGLDoQkpGpOqefXZsPSWqSRCo9v4WUxNEIzjmEzfS")
+auth = tweepy.OAuthHandler("INSERT_HERE", "INSERT_HERE")
+auth.set_access_token("INSERT_HERE" , "INSERT_HERE")
 api = tweepy.API(auth)
 
 myStreamListener = MyStreamListener()
