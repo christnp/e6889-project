@@ -1,0 +1,2 @@
+New google pubsub attribute "localdatetime" in the format YYYY-MM-DD-HH-MM-SS
+This value is the local time based on the DarSky api timestamp
