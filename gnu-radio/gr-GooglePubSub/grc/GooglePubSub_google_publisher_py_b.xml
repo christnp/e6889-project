@@ -4,12 +4,17 @@
   <key>GooglePubSub_google_publisher_py_b</key>
   <category>[GooglePubSub]</category>
   <import>import GooglePubSub</import>
-  <make>GooglePubSub.google_publisher_py_b($project_id, $topic_name)</make>
+  <make>GooglePubSub.google_publisher_py_b($google_creds,$project_id, $topic_name,$messages_per_sec,$attribute)</make>
   <!-- Make one 'param' node for every Parameter you want settable from the GUI.
        Sub-nodes:
        * name
        * key (makes the value accessible as $keyname, e.g. in the make node)
        * type -->
+   <param>
+    <name>Google Creds.</name>
+    <key>google_creds</key>
+    <type></type>
+  </param>
    <param>
     <name>Project ID</name>
     <key>project_id</key>
@@ -20,6 +25,34 @@
      <key>topic_name</key>
      <type></type>
   </param>
+  <param>
+     <name>Message Rate (Hz)</name>
+     <key>messages_per_sec</key>
+     <value>1</value>
+     <type>int</type>
+  </param>
+  <param>
+		<name>Attribute</name>
+		<key>attribute</key>
+		<value>Average</value>
+		<type>enum</type>
+		<option>
+			<name>Average</name>
+			<key>average</key>
+		</option>
+		<option>
+			<name>Max</name>
+			<key>max</key>
+		</option>
+		<option>
+			<name>Min</name>
+			<key>min</key>
+		</option>
+		<option>
+			<name>Reserved</name>
+			<key>reserved</key>
+		</option>
+	</param>
 
   <!-- Make one 'sink' node per input. Sub-nodes:
        * name (an identifier for the GUI)
@@ -28,7 +61,7 @@
        * optional (set to 1 for optional inputs) -->
   <sink>
     <name>in</name>
-     <type>byte</type>
+     <type>float</type>
   </sink>
 
   <!-- Make one 'source' node per output. Sub-nodes:
