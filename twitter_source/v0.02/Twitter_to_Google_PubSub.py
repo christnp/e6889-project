@@ -65,9 +65,14 @@ class MyStreamListener(tweepy.StreamListener):
 
     def on_error(self, status_code):
         if status_code == 420:
+            print("402")
             # returning False in on_data disconnects the stream
             return False
-
+        
+    def on_timeout(self):
+        print('Timeout...')
+        return True  # Don't kill the stream
+        
 # configure Twitter stream
 auth = tweepy.OAuthHandler("INSERT_HERE", "INSERT_HERE")
 auth.set_access_token("INSERT_HERE" , "INSERT_HERE")
