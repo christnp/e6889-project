@@ -39,16 +39,16 @@ P25 Channel B/W: Phase 1, FDMA 12.5kHz & Phase 2, TDMA 6.25kHz
 ### Expect RF Environment
 Columbia U. (Mudd) is in NYPD 26th Precinct
 NYC/Manhattan PD/FD Frequencies: https://www.radioreference.com/apps/db/?ctid=1855
-476.63750  WIF537  RM  186.2 PL  NYPD MN 25/28/32  Precincts 25, 28, 32  FM  Law Dispatch 
-476.36250  WIF538  RM  100.0 PL  NYPD MN 26/30	   Precincts 26, 30 	 FM  Law Dispatch
-482.10625  WQFH238 	B	146.2 PL	FDNY MN Dispatch  Manhattan Dispatch  FMN   Fire Dispatch 
-485.10625  WQFH239 	M		        FDNY MN Mobiles	  Manhattan Mobiles  FMN 	Fire Dispatch
-482.98125 	WQFH238 	RM	156.7 PL	EMS MN C Disp	Manhattan Central Dispatch 	FMN 	EMS Dispatch 
-482.75625 	WQFH238 	RM	151.4 PL	EMS MN N Disp	Manhattan North Dispatch 	FMN 	EMS Dispatch 
-483.21875 	WQFH238 	RM	162.2 PL	EMS MN S Disp	Manhattan South Dispatch 	FMN 	EMS Dispatch 
-483.28125 	WQFH239 	M	167.9 PL	EMS MN C Tac	Manhattan Central Tactical 	FMN 	EMS-Tac 
-483.03125 	WQFH239 	M	167.9 PL	EMS MN N Tac	Manhattan North Tactical 	FMN 	EMS-Tac 
-483.29375 	WQFH239 	M	167.9 PL	EMS MN S Tac	Manhattan South Tactical 	FMN 	EMS-Tac   
+* 476.63750  WIF537  RM  186.2 PL  NYPD MN 25/28/32  Precincts 25, 28, 32  FM  Law Dispatch
+* 476.36250  WIF538  RM  100.0 PL  NYPD MN 26/30	   Precincts 26, 30 	 FM  Law Dispatch
+* 482.10625  WQFH238 	B	146.2 PL	FDNY MN Dispatch  Manhattan Dispatch  FMN   Fire Dispatch 
+* 485.10625  WQFH239 	M		        FDNY MN Mobiles	  Manhattan Mobiles  FMN 	Fire Dispatch
+* 482.98125  WQFH238 	RM	156.7 PL	EMS MN C Disp	Manhattan Central Dispatch 	FMN 	EMS Dispatch 
+* 482.75625  WQFH238 	RM	151.4 PL	EMS MN N Disp	Manhattan North Dispatch 	FMN 	EMS Dispatch 
+* 483.21875  WQFH238 	RM	162.2 PL	EMS MN S Disp	Manhattan South Dispatch 	FMN 	EMS Dispatch 
+* 483.28125  WQFH239 	M	167.9 PL	EMS MN C Tac	Manhattan Central Tactical 	FMN 	EMS-Tac 
+* 483.03125  WQFH239 	M	167.9 PL	EMS MN N Tac	Manhattan North Tactical 	FMN 	EMS-Tac 
+* 483.29375  WQFH239 	M	167.9 PL	EMS MN S Tac	Manhattan South Tactical 	FMN 	EMS-Tac   
 
 ### Test RF Environment
 Using Qniglo Q-168 Kids Walkie-Talkie for Test
