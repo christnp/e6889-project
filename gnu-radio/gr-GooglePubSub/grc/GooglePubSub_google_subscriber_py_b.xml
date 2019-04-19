@@ -4,21 +4,39 @@
   <key>GooglePubSub_google_subscriber_py_b</key>
   <category>[GooglePubSub]</category>
   <import>import GooglePubSub</import>
-  <make>GooglePubSub.google_subscriber_py_b($project_id, $topic_name)</make>
+  <make>GooglePubSub.google_subscriber_py_b($google_creds,$project_id,$topic_name,$sub_name,$snap_name)</make>
   <!-- Make one 'param' node for every Parameter you want settable from the GUI.
        Sub-nodes:
        * name
        * key (makes the value accessible as $keyname, e.g. in the make node)
        * type -->
   <param>
+    <name>Google Creds.</name>
+    <key>google_creds</key>
+    <type>string</type>
+  </param>
+  <param>
     <name>Project ID</name>
     <key>project_id</key>
-    <type></type>
+    <type>string</type>
   </param>
   <param>
      <name>Topic Name</name>
-     <key>topic_name</key>
-     <type></type>
+     <key>topic_name</key>  
+     <type>string</type>
+  </param>
+  <param>
+     <name>Subscription Name</name>
+     <key>sub_name</key>
+     <value></value>
+     <type>string</type>
+  </param>
+  <param>
+     <name>Snapshot Name</name>
+     <key>snap_name</key>
+     <value>None</value>
+     <type>string</type>
+     <hide>part</hide>
   </param>
 
   <!-- Make one 'sink' node per input. Sub-nodes:

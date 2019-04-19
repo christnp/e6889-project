@@ -24,6 +24,8 @@ from gnuradio import gr
 
 import logging
 import time
+import datetime
+import pytz
 import os
 from google.cloud import pubsub_v1
 
@@ -31,14 +33,60 @@ class google_subscriber_py_b(gr.sync_block):
     """
     docstring for block google_subscriber_py_b
     """
-    def __init__(self, project_id,topic_name):
-        # set the Google Credentials
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = \
-        "/home/christnp/Development/e6889/Google/ELEN-E6889-227a1ecc78b6.json"
-        # set class variables
+    def __init__(self, google_creds, project_id, topic_name,sub_name,snap_name):
+
+       # set class input arg variables
+        self.google_creds = str(google_creds)
         self.project_id = str(project_id)
         self.topic_name = str(topic_name)
-        self.sub_name = 'gnradio-sub'
+        self.sub_name = str(sub_name) 
+        if str(snap_name) == "None":
+            self.snap_name = None
+        else:
+            self.snap_name = str(snap_name)
+        
+        
+        
+        # set the Google Credentials
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.google_creds
+
+        print("\n \
+            Google Creds:       {google_creds}\n \
+            Project ID:         {project_id}\n \
+            Topic Name:         {topic_name}\n \
+            Snapshot Name:      {snap_name}\n".format(                 
+                google_creds = self.google_creds,
+                project_id = self.project_id,
+                topic_name = self.topic_name,
+                snap_name = self.snap_name))
+
+        #set class local variables
+        self.dt_format = "%Y-%m-%d %H:%M:%S"
+        self.data_count = 0
+
+        # Google Pub/Sub configuration
+        self.subscriber = pubsub_v1.SubscriberClient()
+        self.topic_path = self.subscriber.topic_path(self.project_id, self.topic_name)
+        self.sub_path = self.subscriber.subscription_path(self.project_id,self.sub_name)
+        self.snap_path = self.subscriber.snapshot_path(self.project_id,self.snap_name)
+
+        # create subscription if it doesn't exist
+        try:
+            self.subscriber.create_subscription(
+                name=self.sub_path, topic=self.topic_path,
+                retain_acked_messages=True)
+        except:
+            self.subscriber.create_snapshot(self.snap_path,self.sub_path)
+            print("Snapshot \'{}\' for \'{}\' created\n!".format(self.snap_path,
+                    self.sub_path))
+                
+            self.subscriber.delete_subscription(self.sub_path)
+            print("Subscription \'{}\' deleted\n!".format(self.sub_path))
+
+            self.subscriber.create_subscription( name=self.sub_path, 
+                        topic=self.topic_path, retain_acked_messages=True)
+            print("Subscription \'{}\' created\n!".format(self.sub_path))
+
         gr.sync_block.__init__(self,
             name="google_subscriber_py_b",
             in_sig=None,
@@ -52,25 +100,19 @@ class google_subscriber_py_b(gr.sync_block):
         # define output
         out = output_items[0]
         
-        subscriber = pubsub_v1.SubscriberClient()
-        topic_path = subscriber.topic_path(self.project_id, self.topic_name)
-        sub_path = subscriber.subscription_path(self.project_id,self.sub_name)
-
-        # create subscription if it doesn't exist
-        try:
-            subscriber.create_subscription(
-                name=sub_path, topic=topic_path)
-        except:
-            print("Subscription \'{}\' already exists\n!".format(sub_path))
+        
         
         def callback(message):
-            print('Received message: {}'.format(message.data))
-            # message is publised as string encoded as UT-8
-            out[:] = numpy.uint8(message.data.decode('utf-8'))
-            
+            # logging.info("\n[{0}] Message #{1} received: \'{3}\' with \
+            #             timestamp = \'{4}\'".format(self.timestamp(),self.data_count,
+            #             message.data,"holder"))#message.attributes.get('localdatetime')))
+            # self.data_count += 1
+            # # message is publised as string encoded as UT-8
+            # out[:] = numpy.uint8(message.data.decode('utf-8'))            
+            print('Received message: {}'.format(message))
             message.ack()
 
-        future = subscriber.subscribe(sub_path, callback=callback)
+        future = self.subscriber.subscribe(self.sub_path, callback=callback)
 
         # The subscriber is non-blocking. We must keep the main thread from
         # exiting to allow it to process messages asynchronously in the background.
@@ -81,7 +123,7 @@ class google_subscriber_py_b(gr.sync_block):
         # exceptions that crop up on the thread will be set on the future.
         try:
             # When timeout is unspecified, the result method waits indefinitely.
-            future.result(timeout=30)
+            future.result(timeout=60)
         except Exception as e:
             print(
                 'Listening for messages on {} threw an Exception: {}.'.format(
@@ -90,4 +132,13 @@ class google_subscriber_py_b(gr.sync_block):
         #   <+signal processing here+>
         # out[:] = whatever
         return len(output_items[0])
+
+     # helper function to calculate timestamp
+    def timestamp(self):
+        # get current GMT date/time
+        # nyc_datetime = datetime.datetime.now(datetime.timezone.utc).strftime(self.dt_format)
+        
+        # get Eastern Time and return time in desired format
+        nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
+        return nyc_datetime.strftime(self.dt_format)
 

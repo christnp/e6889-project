@@ -24,12 +24,10 @@ import numpy
 from gnuradio import gr
 
 import logging
-import threading
 import time
 import datetime
 import pytz
 import os
-import sys
 from google.cloud import pubsub_v1
 
 
@@ -37,44 +35,53 @@ class google_publisher_py_b(gr.sync_block):
     """
     docstring for block google_publisher_py_b
     This module uses the Google Pub/Sub API to publish GNU Radio data
-    to the specified topic. 
+    to the specified topic at a rate of 1/message_delay Hz
     """
-    def __init__(self, google_creds, project_id, topic_name, messages_per_sec,attribute):
+    def __init__(self, google_creds, project_id, topic_name, message_delay,
+                    center_freq,samp_rate,attribute):
                 
         # set class input arg variables
         self.google_creds = str(google_creds)
         self.project_id = str(project_id)
         self.topic_name = str(topic_name)
-        self.message_delay = 1/float(messages_per_sec)
-        self.attribute = str(attribute)
+        self.message_delay = float(message_delay)
+        
+        # RF characteristics
+        self.c_freq = numpy.float32(center_freq)    # center freq (defined)
+        self.s_rate = numpy.int32(samp_rate)        # sample rate (defined)
+        self.attribute = str(attribute)             # attribute data (select)
+
 
         # set the Google Credentials
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.google_creds
 
-        print("Project ID:    {project_id}\n \
-                Topic Name:    {topic_name}\n \
-                Message Delay: {messages_per_sec}\n \
-                Google Creds:  {google_creds}\n \
-                Attribute:     {attribute}\n".format(
+        print("Project ID:      {project_id}\n \
+                Topic Name:     {topic_name}\n \
+                Message Delay:  {message_delay}\n \
+                Google Creds:   {google_creds}\n \
+                Center Freq:    {c_freq} \n \
+                Samp Rate:      {s_rate} \n \
+                Attribute:      {attribute}\n".format( 
                     project_id = self.project_id,
                     topic_name = self.topic_name,
-                    messages_per_sec = self.message_delay,
+                    message_delay = self.message_delay,
                     google_creds = self.google_creds,
+                    c_freq = self.c_freq,
+                    s_rate = self.s_rate,
                     attribute = self.attribute))
-        sys.exit()
+
         #set class local variables
         self.dt_format = "%Y-%m-%d %H:%M:%S"
         self.data_count = 0
         self.delay_start = time.time()
 
-        # define PubSub publish timer (used for message frequency)
-        self.pub_flag = True # flag used to control frequency of publishing
-        # self.publish()
+        # Google Pub/Sub configuration
+        self.publisher = pubsub_v1.PublisherClient()
+        self.topic_path = self.publisher.topic_path(self.project_id, self.topic_name)
 
         gr.sync_block.__init__(self,
             name="google_publisher_py_b",
             in_sig=[numpy.float32],
-            # in_sig=[numpy.uint8],
             out_sig=None)
 
     def work(self, input_items, output_items):
@@ -83,68 +90,49 @@ class google_publisher_py_b(gr.sync_block):
 
         # define input
         in0 = input_items[0]
-        
-        # Configure the batch to publish as soon as there is one kilobyte
-        # of data or one second has passed.
-        # batch_settings = pubsub_v1.types.BatchSettings(
-        #     max_bytes=1024,  # One kilobyte
-        #     max_latency=1,  # One second
-        # )
-        # publisher = pubsub_v1.PublisherClient(batch_settings)
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(self.project_id, self.topic_name)
 
-        # publish the data every '1/message_per_sec'
+        # publish the data every 'message_delay' seconds
         self.publish(in0) 
-
-        futures = [] # used for PubSub batchsettings
-        
-        # data_count = 0
-        # for i in range(0, len(in0)):
-        #     sample = in0[i]
-        #     # batch up individual samples   
-        #     data = str(sample).encode('utf-8')
-        #     print("[{0}] Publishing \'{1}\'!".format(data_count,data))#data))
-        #     data_count += 1
-
-            #tmp_future = publisher.publish(topic_path, data=data)            
-            #tmp_future = publisher.publish(topic_path, data=data, localdatetime=)
-            #futures.append(tmp_future)
-            # futures.append(data)
-
-        # TODO: for debugging
-        # for future in futures:
-            # result() blocks until the message is published.
-            # logging.info('message published: {0}'.format(future.result()))
-            # logging.info('message published: {0}\n'.format(future))
 
         return len(input_items[0])
     
-    def publish(self,in0):        
-        # self.messages_per_sec
-        # threading.Timer(2.0, self.publish()).start()
+    # publish a message every self.message_delay seconds
+    # TODO: if we decied to publish raw data as Bytestring, we need to convert
+    # numpy.arry (in0) to unicode or bytes via in0.astype("U") or .astype("B")
+    def publish(self,in0):    
+        
+        ts_nyc = self.timestamp()
+        attr_data = 0.0
         if time.time() - self.message_delay >= self.delay_start:
-            print('its been {} secs'.format(self.message_delay))
-            # print("setting pub_flag = True") 
-            # self.pub_flag = True
-            print("\n\n{0}: len(in0) = {1}".format(self.timestamp(),len(in0)))
-            print("[{0}] in0 = {1}".format(self.data_count,in0))
-            print("Sum = {0}, Average = {1}".format(sum(in0),sum(in0)/float(len(in0))))
-            print("Max = {0}, Min = {1}".format(max(in0),min(in0)))
-            self.data_count += 1
+            # debug message
+            logging.debug("[{0}] DATA (size={1}) = {2}".format(ts_nyc,len(in0),in0))
 
+            # calculate the attribute value (chosen in GNU Radio block)
+            if (self.attribute == "average"):
+                attr_data = sum(in0)/float(len(in0))
+            elif (self.attribute == "max"):
+                attr_data = max(in0)
+            elif (self.attribute == "min"):
+                attr_data = min(in0)
+            else:
+                attr_data = -1.0 # error
+                print("No attribute passed to Python code...?\n")
+            
+            # publish the data to topic and log the event 
+            self.publisher.publish(self.topic_path,data=str(attr_data).encode("utf-8"),localdatetime=ts_nyc)
+            logging.info("\n[{0}] Message #{1} published \'{2}\' = {3}".format(
+                            ts_nyc,self.data_count,self.attribute,
+                            str(attr_data).encode("utf-8")))
+         
+            # increment global data message counter and reset timer
+            self.data_count += 1
             self.delay_start = time.time()              
 
+    # helper function to calculate timestamp
     def timestamp(self):
-
         # get current GMT date/time
-        # datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f%Z")
+        # nyc_datetime = datetime.datetime.now(datetime.timezone.utc).strftime(self.dt_format)
         
-        # dt_index = datetime.datetime.strptime(tweet_dtc, '%Y-%m-%d %H:%M:%S')
-        # convert GMT to NYC time
-        # dt_index -= datetime.timedelta(seconds=(60 * 60 * 4))
-        # nyc_datetime = dt_index.strftime('%Y-%m-%d-%H-%M-%S')
-
         # get Eastern Time and return time in desired format
         nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
         return nyc_datetime.strftime(self.dt_format)
