@@ -1,0 +1,4 @@
+Initial look at 5 days of PubSub outputs from the weather source
+Uses k-means (unfortunately sklearn does not suppor k-medoid)
+Can easily export model to start doing predictions in beam
+Planning to redo with pyclustering libary (which supports k-medoid) 
