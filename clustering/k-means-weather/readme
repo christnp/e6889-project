@@ -1,4 +1,9 @@
 Initial look at 5 days of PubSub outputs from the weather source
-Uses k-means (unfortunately sklearn does not suppor k-medoid)
+Uses k-means (unfortunately sklearn does not support k-medoid)
 Can easily export model to start doing predictions in beam
+- note that only four attributes are used
+- each attribute is transformed into a numberic value in the rang [0:1]
+- localdatatime is not used in model (assume model will be applied to single tuple that is an beam aggregation of multiple data points)
+- thus, the window size we pick in beam needs to contain at least one weather data point
+- we can publish the weather data at any rate (I think the values obtained from the API change faster than the actual weather can)
 Planning to redo with pyclustering libary (which supports k-medoid) 
