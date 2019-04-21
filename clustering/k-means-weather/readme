@@ -1,4 +1,14 @@
 Initial look at 5 days of PubSub outputs from the weather source
+- weather didn't change that much last week
+- Plan moving forward is to leave the sources the way they are and grow the corpus used for offline training
+
+One issue is that pubsub does not stream archived data in order (check out the first column of the txt file)
+- it is sort of shocking how bad it is when you replay data
+- this means that if we want to present x days worth of actual streaming results, we have to be up and running x days before the presentation
+- My suggestion is to shoot for a stable baseline 1.5 weeks before the presentation
+  (to shoot for 7 days of streaming outputs + enough time to incorporate the data into the final presentation)
+
+
 Uses k-means (unfortunately sklearn does not support k-medoid)
 Can easily export model to start doing predictions in beam
 - note that only four attributes are used
