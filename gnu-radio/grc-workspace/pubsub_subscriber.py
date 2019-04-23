@@ -3,7 +3,7 @@
 ##################################################
 # GNU Radio Python Flow Graph
 # Title: Pubsub Subscriber
-# Generated: Fri Apr 19 02:10:45 2019
+# Generated: Sat Apr 20 13:08:57 2019
 ##################################################
 
 from distutils.version import StrictVersion
@@ -70,7 +70,7 @@ class pubsub_subscriber(gr.top_block, Qt.QWidget):
         ##################################################
         self.blocks_throttle_0 = blocks.throttle(gr.sizeof_char*1, samp_rate,True)
         self.blocks_null_sink_0 = blocks.null_sink(gr.sizeof_char*1)
-        self.GooglePubSub_google_subscriber_py_b_0 = GooglePubSub.google_subscriber_py_b('/home/christnp/Development/e6889/Google/ELEN-E6889-227a1ecc78b6.json','elen-e6889','gnuradio','gnuradio-sub','gnuradio-snap')
+        self.GooglePubSub_google_subscriber_py_b_0 = GooglePubSub.google_subscriber_py_b('/home/christnp/Development/e6889/Google/ELEN-E6889-227a1ecc78b6.json','elen-e6889','gnuradio','gnuradio-sub','')
 
         ##################################################
         # Connections

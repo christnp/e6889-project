@@ -27,6 +27,7 @@ import time
 import datetime
 import pytz
 import os
+import sys
 from google.cloud import pubsub_v1
 
 class google_subscriber_py_b(gr.sync_block):
@@ -38,12 +39,13 @@ class google_subscriber_py_b(gr.sync_block):
        # set class input arg variables
         self.google_creds = str(google_creds)
         self.project_id = str(project_id)
-        self.topic_name = str(topic_name)
-        self.sub_name = str(sub_name) 
-        if str(snap_name) == "None":
-            self.snap_name = None
-        else:
-            self.snap_name = str(snap_name)
+        self.topic_name = str(topic_name) if topic_name else "noname-topic"
+        self.sub_name = str(sub_name) if sub_name else "noname-sub"
+        self.snap_name = str(snap_name) if snap_name else "noname-snap"
+        # if str(snap_name) == "None":
+        #     self.snap_name = None
+        # else:
+        #     self.snap_name = str(snap_name)
         
         
         
@@ -70,22 +72,41 @@ class google_subscriber_py_b(gr.sync_block):
         self.sub_path = self.subscriber.subscription_path(self.project_id,self.sub_name)
         self.snap_path = self.subscriber.snapshot_path(self.project_id,self.snap_name)
 
-        # create subscription if it doesn't exist
+        # create subscription; if it exists create snapshot then drain 
         try:
             self.subscriber.create_subscription(
                 name=self.sub_path, topic=self.topic_path,
                 retain_acked_messages=True)
         except:
-            self.subscriber.create_snapshot(self.snap_path,self.sub_path)
-            print("Snapshot \'{}\' for \'{}\' created\n!".format(self.snap_path,
-                    self.sub_path))
-                
-            self.subscriber.delete_subscription(self.sub_path)
-            print("Subscription \'{}\' deleted\n!".format(self.sub_path))
+            print("Subscription \'{}\' exists!\n".format(self.sub_path))
 
-            self.subscriber.create_subscription( name=self.sub_path, 
-                        topic=self.topic_path, retain_acked_messages=True)
-            print("Subscription \'{}\' created\n!".format(self.sub_path))
+            # if subsccription exists, create a snapshot of it
+            # NOTE: to retain multiple snapshots and avoid accidentally deleting
+            #       an important snapshot, we append a timestamp to the snapshot
+            #       path (YYYYMMDDHHMMSS).
+            self.snap_path = self.snap_path + str(datetime.datetime
+                                            .now(pytz.timezone('US/Eastern'))
+                                            .strftime("-%Y%m%d%H%M%S"))
+            try:
+                self.subscriber.create_snapshot(self.snap_path,self.sub_path)
+                print("Snapshot \'{}\' for \'{}\' created!\n"
+                    .format(self.snap_path,self.sub_path))
+            except:
+                print("WARNING: Snapshot \'{}\' for \'{}\' failed!\n"
+                    .format(self.snap_path,self.sub_path))
+                pass
+
+            # delete and recreate the subscription to drain it
+            try:
+                self.subscriber.delete_subscription(self.sub_path)
+                print("Subscription \'{}\' deleted!".format(self.sub_path))
+                self.subscriber.create_subscription( name=self.sub_path, 
+                            topic=self.topic_path, retain_acked_messages=True)
+                print("Subscription \'{}\' created!\n".format(self.sub_path))
+            except:
+                print("WARNING: Subscription \'{}\' recreation failed!\n"
+                    .format(self.sub_path))
+                pass
 
         gr.sync_block.__init__(self,
             name="google_subscriber_py_b",
@@ -99,9 +120,8 @@ class google_subscriber_py_b(gr.sync_block):
 
         # define output
         out = output_items[0]
-        
-        
-        
+
+        # subscribr callback        
         def callback(message):
             # logging.info("\n[{0}] Message #{1} received: \'{3}\' with \
             #             timestamp = \'{4}\'".format(self.timestamp(),self.data_count,
@@ -114,6 +134,7 @@ class google_subscriber_py_b(gr.sync_block):
 
         future = self.subscriber.subscribe(self.sub_path, callback=callback)
 
+        print('Listening on subscription path {}'.format(self.sub_path))
         # The subscriber is non-blocking. We must keep the main thread from
         # exiting to allow it to process messages asynchronously in the background.
         # print('Listening for messages on {}'.format(sub_path))
@@ -127,7 +148,8 @@ class google_subscriber_py_b(gr.sync_block):
         except Exception as e:
             print(
                 'Listening for messages on {} threw an Exception: {}.'.format(
-                    self.sub_name, e))  
+                    self.sub_path, e))  
+            return 0
     
         #   <+signal processing here+>
         # out[:] = whatever

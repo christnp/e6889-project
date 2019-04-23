@@ -30,6 +30,7 @@ import pytz
 import os
 from google.cloud import pubsub_v1
 
+DT_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 class google_publisher_py_b(gr.sync_block):
     """
@@ -71,7 +72,6 @@ class google_publisher_py_b(gr.sync_block):
                     attribute = self.attribute))
 
         #set class local variables
-        self.dt_format = "%Y-%m-%d %H:%M:%S"
         self.data_count = 0
         self.delay_start = time.time()
 
@@ -119,7 +119,12 @@ class google_publisher_py_b(gr.sync_block):
                 print("No attribute passed to Python code...?\n")
             
             # publish the data to topic and log the event 
-            self.publisher.publish(self.topic_path,data=str(attr_data).encode("utf-8"),localdatetime=ts_nyc)
+            self.publisher.publish(self.topic_path,
+                    data=str(attr_data).encode("utf-8"),
+                    localdatetime=ts_nyc,
+                    center_freq = str(self.c_freq),
+                    sample_rate = str(self.s_rate))
+
             logging.info("\n[{0}] Message #{1} published \'{2}\' = {3}".format(
                             ts_nyc,self.data_count,self.attribute,
                             str(attr_data).encode("utf-8")))
@@ -131,9 +136,9 @@ class google_publisher_py_b(gr.sync_block):
     # helper function to calculate timestamp
     def timestamp(self):
         # get current GMT date/time
-        # nyc_datetime = datetime.datetime.now(datetime.timezone.utc).strftime(self.dt_format)
+        # nyc_datetime = datetime.datetime.now(datetime.timezone.utc).strftime(DT_FORMAT)
         
         # get Eastern Time and return time in desired format
         nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
-        return nyc_datetime.strftime(self.dt_format)
+        return nyc_datetime.strftime(DT_FORMAT)
         

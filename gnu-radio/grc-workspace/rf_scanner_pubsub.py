@@ -3,7 +3,7 @@
 ##################################################
 # GNU Radio Python Flow Graph
 # Title: Rf Scanner Pubsub
-# Generated: Fri Apr 19 02:41:02 2019
+# Generated: Sun Apr 21 23:49:00 2019
 ##################################################
 
 from distutils.version import StrictVersion
@@ -23,6 +23,7 @@ from PyQt5 import Qt, QtCore
 from gnuradio import blocks
 from gnuradio import eng_notation
 from gnuradio import fft
+from gnuradio import filter
 from gnuradio import gr
 from gnuradio import qtgui
 from gnuradio.eng_option import eng_option
@@ -30,6 +31,7 @@ from gnuradio.fft import window
 from gnuradio.filter import firdes
 from gnuradio.qtgui import Range, RangeWidget
 from optparse import OptionParser
+import GooglePubSub
 import osmosdr
 import sip
 import sys
@@ -75,12 +77,12 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         self.samp_rate = samp_rate = 2.0e6
         self.fft_size = fft_size = 1024
         self.cutoff = cutoff = (signal_bw/2)+750
-        self.center_freq = center_freq = 476.36250e6
+        self.center_freq = center_freq = 462.635e6
 
         ##################################################
         # Blocks
         ##################################################
-        self._center_freq_range = Range(470e6, 490e6, 0.0001e6, 476.36250e6, 200)
+        self._center_freq_range = Range(462e6, 467e6, 0.01e6, 462.635e6, 200)
         self._center_freq_win = RangeWidget(self._center_freq_range, self.set_center_freq, "center_freq", "counter_slider", float)
         self.top_layout.addWidget(self._center_freq_win)
         self.rtlsdr_source_0 = osmosdr.source( args="numchan=" + str(1) + " " + '' )
@@ -180,20 +182,25 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
 
         self._qtgui_time_sink_x_1_0_win = sip.wrapinstance(self.qtgui_time_sink_x_1_0.pyqwidget(), Qt.QWidget)
         self.top_layout.addWidget(self._qtgui_time_sink_x_1_0_win)
+        self.low_pass_filter_0_0 = filter.fir_filter_ccf(1, firdes.low_pass(
+        	1, samp_rate, cutoff, transition, firdes.WIN_HAMMING, 6.76))
         self.fft_vxx_0 = fft.fft_vcc(fft_size, True, (window.blackmanharris(1024)), True, 1)
         self.blocks_vector_to_stream_0 = blocks.vector_to_stream(gr.sizeof_float*1, fft_size)
         self.blocks_stream_to_vector_0 = blocks.stream_to_vector(gr.sizeof_gr_complex*1, fft_size)
         self.blocks_complex_to_mag_squared_0 = blocks.complex_to_mag_squared(fft_size)
+        self.GooglePubSub_google_publisher_py_b_0_0 = GooglePubSub.google_publisher_py_b('/home/christnp/Development/e6889/Google/ELEN-E6889-227a1ecc78b6.json','elen-e6889','gnuradio',3,center_freq,samp_rate,"max")
 
         ##################################################
         # Connections
         ##################################################
         self.connect((self.blocks_complex_to_mag_squared_0, 0), (self.blocks_vector_to_stream_0, 0))
         self.connect((self.blocks_stream_to_vector_0, 0), (self.fft_vxx_0, 0))
+        self.connect((self.blocks_vector_to_stream_0, 0), (self.GooglePubSub_google_publisher_py_b_0_0, 0))
         self.connect((self.blocks_vector_to_stream_0, 0), (self.qtgui_time_sink_x_1_0, 0))
         self.connect((self.fft_vxx_0, 0), (self.blocks_complex_to_mag_squared_0, 0))
-        self.connect((self.rtlsdr_source_0, 0), (self.blocks_stream_to_vector_0, 0))
-        self.connect((self.rtlsdr_source_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
+        self.connect((self.low_pass_filter_0_0, 0), (self.blocks_stream_to_vector_0, 0))
+        self.connect((self.low_pass_filter_0_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
+        self.connect((self.rtlsdr_source_0, 0), (self.low_pass_filter_0_0, 0))
 
     def closeEvent(self, event):
         self.settings = Qt.QSettings("GNU Radio", "rf_scanner_pubsub")
@@ -212,6 +219,7 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
 
     def set_transition(self, transition):
         self.transition = transition
+        self.low_pass_filter_0_0.set_taps(firdes.low_pass(1, self.samp_rate, self.cutoff, self.transition, firdes.WIN_HAMMING, 6.76))
 
     def get_samp_rate(self):
         return self.samp_rate
@@ -221,6 +229,7 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         self.rtlsdr_source_0.set_sample_rate(self.samp_rate)
         self.qtgui_waterfall_sink_x_0.set_frequency_range(self.center_freq, self.samp_rate)
         self.qtgui_time_sink_x_1_0.set_samp_rate(self.samp_rate)
+        self.low_pass_filter_0_0.set_taps(firdes.low_pass(1, self.samp_rate, self.cutoff, self.transition, firdes.WIN_HAMMING, 6.76))
 
     def get_fft_size(self):
         return self.fft_size
@@ -233,6 +242,7 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
 
     def set_cutoff(self, cutoff):
         self.cutoff = cutoff
+        self.low_pass_filter_0_0.set_taps(firdes.low_pass(1, self.samp_rate, self.cutoff, self.transition, firdes.WIN_HAMMING, 6.76))
 
     def get_center_freq(self):
         return self.center_freq
