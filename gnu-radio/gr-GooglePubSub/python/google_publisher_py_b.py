@@ -101,7 +101,7 @@ class google_publisher_py_b(gr.sync_block):
     # numpy.arry (in0) to unicode or bytes via in0.astype("U") or .astype("B")
     def publish(self,in0):    
         
-        ts_nyc = self.timestamp()
+        ts_google,ts_nyc = self.timestamp()
         attr_data = 0.0
         if time.time() - self.message_delay >= self.delay_start:
             # debug message
@@ -121,12 +121,13 @@ class google_publisher_py_b(gr.sync_block):
             # publish the data to topic and log the event 
             self.publisher.publish(self.topic_path,
                     data=str(attr_data).encode("utf-8"),
+                    timestamp =str(ts_google), # use "timestamp" for beam PubSub timestamp_attribute
                     localdatetime=ts_nyc,
                     center_freq = str(self.c_freq),
                     sample_rate = str(self.s_rate))
 
-            logging.info("\n[{0}] Message #{1} published \'{2}\' = {3}".format(
-                            ts_nyc,self.data_count,self.attribute,
+            logging.info("\n[{0} | {1}] Message #{2} published \'{3}\' = {4}".format(
+                            ts_nyc,ts_google,self.data_count,self.attribute,
                             str(attr_data).encode("utf-8")))
          
             # increment global data message counter and reset timer
@@ -140,5 +141,11 @@ class google_publisher_py_b(gr.sync_block):
         
         # get Eastern Time and return time in desired format
         nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
-        return nyc_datetime.strftime(DT_FORMAT)
+
+        #Google PubSub Timestamp in RFC 3339 format, UTC timezone, format
+        # Example: 2015-10-29T23:41:41.123Z
+        gp_timestamp = str(datetime.datetime.utcnow().isoformat("T")) + "Z"
+
+        # return pubsub timestamp and local (NYC) time in formatted string
+        return gp_timestamp, nyc_datetime.strftime(DT_FORMAT)
         

@@ -38,9 +38,11 @@ import os
 import time
 
 import apache_beam as beam # pylint: disable=import-error
+from apache_beam import window # pylint: disable=import-error
 from apache_beam.metrics.metric import Metrics # pylint: disable=import-error
 from apache_beam.transforms.core import Windowing # pylint: disable=import-error
-from apache_beam.transforms.window import FixedWindows # pylint: disable=import-error
+# from apache_beam.transforms.window import FixedWindows # pylint: disable=import-error
+# from apache_beam.transforms.window import SlidingWindows # pylint: disable=import-error
 from apache_beam.transforms.trigger import AfterProcessingTime # pylint: disable=import-error
 from apache_beam.transforms.trigger import AccumulationMode # pylint: disable=import-error
 from apache_beam.transforms.trigger import AfterWatermark # pylint: disable=import-error
@@ -57,6 +59,7 @@ GC_DT_FORMAT = '%Y%m%d-%H%M%S'
 PROJECT = 'elen-e6889'
 GR_TOPIC = 'gnuradio'
 GR_SUB = 'gnuradio-sub'
+GR_SNAP = 'gnuradio-snap'
 GR_TABLE = 'rf_samples'
 DATASET = 'project_data'
 
@@ -66,7 +69,10 @@ DFLOW_TEMP = 'gs://e6889-bucket/tmp/'
 STAGE = 'gs://e6889-bucket/stage/'
 RUNNER = 'DataflowRunner'
 
-# helper function to calculate timestamp
+######################################################
+# HELPER FUNCTIONS
+#
+# to calculate timestamp for google cloud applications (different than display format)
 def gc_timestamp():
     # get current GMT date/time
     # nyc_datetime = datetime.datetime.now(datetime.timezone.utc).strftime(DT_FORMAT)
@@ -75,6 +81,12 @@ def gc_timestamp():
     nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
     return nyc_datetime.strftime(GC_DT_FORMAT)
 
+# END HELPER FUNCTIONS
+######################################################
+
+######################################################
+# MAIN PROCESSING FUNCTION
+#
 def run(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--project', '-p',
@@ -137,21 +149,55 @@ def run(argv=None):
     #static
     out_sub = 'output-sub'
 
-  ######################################################
-  # GOOGLE PUB/SUB CONFIG
-  #
+######################################################
+# GOOGLE PUB/SUB CONFIG
+#
     subscriber = pubsub_v1.SubscriberClient()
     topic_path = subscriber.topic_path(project, gr_topic)
     sub_path = subscriber.subscription_path(project,gr_sub)
+    snap_path = subscriber.snapshot_path(project,GR_SNAP)
+
+    # create subscription; if it exists create snapshot then drain 
+    try:
+        subscriber.create_subscription(
+            name=sub_path, topic=topic_path,
+            retain_acked_messages=True)
+    except:
+        print("Subscription \'{}\' exists!\n".format(sub_path))
+        # if subsccription exists, create a snapshot of it
+        # NOTE: to retain multiple snapshots and avoid accidentally deleting
+        #       an important snapshot, we append a timestamp to the snapshot
+        #       path (YYYYMMDDHHMMSS).
+        snap_path = snap_path + str(gc_timestamp())
+        try:
+            subscriber.create_snapshot(snap_path,sub_path)
+            print("Snapshot \'{}\' for \'{}\' created!\n"
+                .format(snap_path,sub_path))
+        except:
+            print("WARNING: Snapshot \'{}\' for \'{}\' failed!\n"
+                .format(snap_path,sub_path))
+            pass
+
+        # delete and recreate the subscription to drain it
+        try:
+            subscriber.delete_subscription(sub_path)
+            print("Subscription \'{}\' deleted!".format(sub_path))
+            subscriber.create_subscription( name=sub_path, 
+                        topic=topic_path, retain_acked_messages=True)
+            print("Subscription \'{}\' created!\n".format(sub_path))
+        except:
+            print("WARNING: Subscription \'{}\' recreation failed!\n"
+                .format(sub_path))
+            pass
 
     logging.info("Google Pub/Sub topic: \'{}\'".format(topic_path))
     logging.info("Google Pub/Sub subscription: \'{}\'\n".format(sub_path))
-  # END GOOGLE PUB/SUB CONFIG
-  ######################################################
-  
-  ######################################################
-  # GOOGLE BIGQUERY CONFIG
-  #
+# END GOOGLE PUB/SUB CONFIG
+######################################################
+
+######################################################
+# GOOGLE BIGQUERY CONFIG
+#
     # BigQuery table schema
     from apache_beam.io.gcp.internal.clients import bigquery  # pylint: disable=import-error,wrong-import-order, wrong-import-position
     table_schema = bigquery.TableSchema()
@@ -194,10 +240,12 @@ def run(argv=None):
                   project_id = project,
                   dataset_id = DATASET,
                   table_id = GR_TABLE)
+# END BIGQUERY CONFIG
+######################################################
 
-  ######################################################
-  # START BEAM PIPELINE
-  #
+######################################################
+# START BEAM PIPELINE
+#
     pipeline_options = PipelineOptions()
     # use the requirements document to list Python packages required in the pipeline
     # NOTE: this didn't seem to resolve the datetime dependecy I saw
@@ -214,17 +262,22 @@ def run(argv=None):
     # Define pipline
     p = beam.Pipeline(options=pipeline_options)
     data = (p | 'GetData' >>  beam.io.ReadFromPubSub(  
-                                  #topic=topic_path,
+                                  #   topic=topic_path,
                                   subscription=sub_path,
-                                  with_attributes=True))
+                                  with_attributes=True,
+                                  timestamp_attribute='timestamp'))
                                   # cannot use .with_output_types(bytes) with atttributes
 # | ReadFromPubSub('projects/fakeprj/topics/a_topic',
 #                   None, 'a_label', with_attributes=True,
 #                   timestamp_attribute='time')
 
     def printattr(element):
-        logging.info("\ndata -> {}".format(element.data))
-        logging.info("attributes -> {}\n".format(element.attributes))
+        # logging.info("\ndata -> {}".format(element.data))
+        # logging.info("attributes -> {}\n".format(element.attributes))
+        logging.info("\ndata -> {}".format(element['data']))
+        logging.info("center_freq -> {}".format(element['center_freq']))
+        logging.info("sample_rate -> {}".format(element['sample_rate']))
+        logging.info("datetime -> {}\n".format(element['localdatetime']))
         yield element
         # logging.info("\nHERE I AM\n")
 
@@ -233,22 +286,149 @@ def run(argv=None):
         #     logging.info("attribute -> key: {}, value: {}\n".format(key,value))
 
 
-    payload = data | 'printattr' >> beam.Map(printattr)
+    payload = (data | 'ParseData' >> beam.ParDo(ParseAttrDataFn())
+                    | 'CreateTuple' >> beam.ParDo(CreateFreqTupleFn()))
+                    # | 'printattr' >> beam.Map(printattr))
+
+    signal1 = (payload | 'SignalDet1' >> beam.ParDo(SignalDetector1Fn(1)))
+
+    # signal2 = (payload  | 'Window' >> beam.WindowInto(window.SlidingWindows(60,59))
+                        # |'SignalDet2' >> beam.ParDo(SignalDetector2Fn()))
 
     # https://stackoverflow.cotopic_pathm/questions/51621792/streaming-pipelines-with-bigquery-sinks-in-python
     # Write data to BigQuery
-    payload | beam.io.WriteToBigQuery(
-      table_spec,
-      schema=table_schema,
-      write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-      create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)
+    # payload | beam.io.WriteToBigQuery(
+    #   table_spec,
+    #   schema=table_schema,
+    #   write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+    #   create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)
 
      # Execute the Pipline
     result = p.run()
     result.wait_until_finish()
 
-  # END PIPELINE
+# END PIPELINE
+######################################################
+  
+######################################################
+# CUSTOM PARDO FUNCTIONS
+#
+# Transform: parses PCollection elements  
+class ParseAttrDataFn(beam.DoFn):
+  """Parses and type converts the raw data and Google Pub/Sub attributes.
+    Each Pub/Sub packet has a data payload (representing time varying element
+    of the RF spectrum, such as average or maximum power spectrum density at
+    the specified center frequency). A Google Pub/Sub packet is expected to be
+    in the following format:
+    {
+      data: 'VALUE' // float
+      attributes: {
+        "localdatetime":  "YYYY-MM-DD HH:MM:SS"
+        "timestamp:"      "YYYY-MM-DDTHH:MM:SS.SSSZ" // RFC 3339 format, UTC 
+        "center_freq":    "VALUE_IN_HZ" // float
+        "sample_rate":    "VALUE_IN_SAMPLE_PER_SEC" // float
+      }
+    }
+
+  """
+  def __init__(self): 
+    self.num_parse_errors = Metrics.counter(self.__class__, 'num_parse_errors')
+
+  # main process
+  def process(self,element):
+    logging.info('ParseAttrDataFn(): expected {}\n'.format(element)) 
+
+    # get data
+    try:
+      data = element.data
+    except Exception as e:
+      data = -1.0
+      self.num_parse_errors.inc()
+      logging.critical("ParseAttrDataFn(): data type conversion error \'{}\'.".format(e))
+    # get timestamp for windowing based on collection time
+    try:
+      timestamp = element.attributes['timestamp'].encode('utf-8')
+    except Exception as e:
+      timestamp = 0
+      self.num_parse_errors.inc()
+      logging.critical("ParseAttrDataFn(): timestamp parse error \'{}\'.".format(e))
+    # get local date/time string
+    try:
+      dt = element.attributes['localdatetime'].encode('utf-8')
+    except Exception as e:
+      dt = ''
+      self.num_parse_errors.inc()
+      logging.critical("ParseAttrDataFn(): datetime parse error  \'{}\'.".format(e))
+    # get center frequency of signal for grouping
+    try:
+      cfreq = element.attributes['center_freq'].encode('utf-8')
+    except Exception as e: 
+      cfreq = None
+      logging.warning("ParseAttrDataFn(): center_freq parse error \'{}\'.".format(e))
+    # get sample rate (not used as of 2019/04/25)
+    try:
+      srate = element.attributes['sample_rate'].encode('utf-8')
+    except Exception as e:
+      srate = None
+      logging.warning("ParseAttrDataFn(): sample parse error \'{}\'.".format(e))
+       
+    # return a dictionary for subsequent processing.
+    yield {
+      'data':data,
+      'center_freq':cfreq,
+      'sample_rate':srate,
+      'localdatetime': dt,
+      'timestamp': timestamp
+    }
+    # yield element
+
+# ParDo Transform: creates tuple with center_freq as key and adds timestamp
+class CreateFreqTupleFn(beam.DoFn):
+  def process(self, element):
+    # PCollecton format: [key,value,google_ts]
+    key_value = (element['center_freq'],element['data'])
+    try:
+      google_ts = element['timestamp']
+    except Exception as e:
+      google_ts = 0
+      logging.warning("ParseAttrDataFn(): unitx_ts cast error \'{}\'.".format(e))
+
+    logging.info('CreateFreqTupleFn(): ts={}, kv={}\n'.format(google_ts,key_value)) 
+    
+    # yield window.TimestampedValue(key_value,google_ts)
+    yield key_value
+
+# Transform:   
+class SignalDetector1Fn(beam.DoFn):
+  """ Detects signal on streaming data given a threshold
+
+  """
+  def __init__(self,threshold=0): 
+    self.threshold = threshold
+    self.num_parse_errors = Metrics.counter(self.__class__, 'num_parse_errors')
+
+  # main process
+  def process(self,element,window=beam.DoFn.WindowParam):
+
+    logging.info("\nExpected -> {}".format(element))
+    # win_start = window.start.to_utc_datetime().strftime(DT_FORMAT)
+    # win_end = window.end.to_utc_datetime().strftime(DT_FORMAT)
+    win_start = win_end = 0
+    try:
+      logging.info("\ndata ....... {}".format(element['data']))
+      logging.info("datetime ..... {}".format(element['localdatetime']))
+      logging.info("center_freq .. {}".format(element['center_freq']))
+      logging.info("sample_rate .. {}".format(element['sample_rate']))
+      logging.info("threshold .... {}".format(self.threshold))
+      logging.info("signal? ...... {}".format((True if element['data'] >= self.threshold else False)))
+      logging.info("win start .... {}".format(win_start))
+      logging.info("win end ...... {}\n".format(win_end))
+      
+    except Exception as e:
+      print("Print failure....")
+    # END PARDOS
   ######################################################
+
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.INFO)
   run()
