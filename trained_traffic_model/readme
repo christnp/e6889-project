@@ -1,0 +1,4 @@
+This is a trained neural network that converts the traffic camera images to a count of vehicles + people
+- the mean absolute error suggests that is +/- 2 vehicles/people with the data it was trained on
+- it probably isn't that accurate, but is might be good enough to feed the clustering
+- pressing forward with it in its current form
