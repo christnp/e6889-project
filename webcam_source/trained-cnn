@@ -1,4 +1,0 @@
-version zero - converts webcam image into count of vehicle + people
-- mean absolute error is +/- 2 vehicles/people
-- probably isn't as good as the numbers imply
-- moving forward with it as is
