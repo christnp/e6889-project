@@ -268,28 +268,26 @@ def run(argv=None):
                                   #   topic=topic_path,
                                   subscription=sub_path,
                                   with_attributes=True,
-                                  timestamp_attribute='timestamp'))
+                                  timestamp_attribute='timestamp')
+              | 'ParseData' >> beam.ParDo(ParseAttrDataFn()))#'RfTuple' >> beam.Map(lambda pubsub: 
+            # (float(pubsub.attributes['center_freq']),
+            # float(pubsub.data))))
 
-    peaks = (data | 'ParseData' >> beam.ParDo(ParseAttrDataFn())#'RfTuple' >> beam.Map(lambda pubsub: 
-                                # (float(pubsub.attributes['center_freq']),
-                                # float(pubsub.data)))
-                    | 'PeakFilter' >> beam.Filter(lambda parsed:  
-                                        float(parsed['data']) >= threshold) # filter noise
-                    | 'CreateTuple' >> beam.ParDo(CreateFreqTupleFn()))
+    # data -> { 'data':X, 'center_freq':X, 'sample_rate':X, 'localdatetime':X }
+    signal1 = (data | 'SignalDet' >> SignalDetector(threshold)
+                    # | 'PeakMarker' >> beam.Map(lambda peak: (peak[0],1)))
+                    | 'FormatOutput' >> beam.ParDo(FormatOutputRawFn()))
+
+    # data -> { 'data':X, 'center_freq':X, 'sample_rate':X, 'localdatetime':X }
+    signal2 = (data | 'CreateTuple' >> beam.ParDo(CreateFreqTupleFn()) # (center_freq,(localdatetime,data))
                     # | 'CreateRFTuple' >> beam.Map(lambda parsed: 
                     #                     (float(parsed['center_freq']),
                     #                     (parsed['localdatetime'],                                        
                     #                     float(parsed['data'])))))                    
-                    #| 'PeakMarker' >> beam.Map(lambda peak: (peak[0],1)))
-
-    signal1 = (peaks  | 'Window' >> beam.WindowInto(window.SlidingWindows(60,59))
-                      # | 'SignalDet1' >> beam.ParDo(SignalDetector1Fn(threshold)))
-                      | 'Group' >> beam.GroupByKey())
-
-    output = signal1 | 'FormatOutput' >> beam.ParDo(FormatOutputFn()
-    )
-    # signal2 = (payload  | 'Window' >> beam.WindowInto(window.SlidingWindows(60,59))
-                        # |'SignalDet2' >> beam.ParDo(SignalDetector2Fn()))
+                    
+                      | 'Window' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
+                      | 'Group' >> beam.GroupByKey() # group by center_freq, then average
+                      | 'ChannelAverage' >> beam.ParDo(ChannelAvgFn()))
 
     # https://stackoverflow.cotopic_pathm/questions/51621792/streaming-pipelines-with-bigquery-sinks-in-python
     # Write data to BigQuery
@@ -327,33 +325,26 @@ class ParseAttrDataFn(beam.DoFn):
     }
 
   """
-  def __init__(self): 
-    self.num_parse_errors = Metrics.counter(self.__class__, 'num_parse_errors')
+  # def __init__(self): 
+    # self.num_parse_errors = Metrics.counter(self.__class__, 'num_parse_errors')
 
   # main process
   def process(self,element):
-    logging.debug('ParseAttrDataFn(): Data dump ->  {}\n'.format(element)) 
+    # logging.debug('ParseAttrDataFn(): Data dump ->  {}\n'.format(element)) 
 
     # get data
     try:
       data = element.data
     except Exception as e:
       data = -1.0
-      self.num_parse_errors.inc()
+      # self.num_parse_errors.inc()
       logging.critical("ParseAttrDataFn(): data type conversion error \'{}\'.".format(e))
-    # get timestamp for windowing based on collection time
-    # try:
-    #   timestamp = element.attributes['timestamp']
-    # except Exception as e:
-    #   timestamp = 0
-    #   self.num_parse_errors.inc()
-    #   logging.critical("ParseAttrDataFn(): timestamp parse error \'{}\'.".format(e))
     # get local date/time string
     try:
       dt = element.attributes['localdatetime']
     except Exception as e:
       dt = ''
-      self.num_parse_errors.inc()
+      # self.num_parse_errors.inc()
       logging.critical("ParseAttrDataFn(): datetime parse error  \'{}\'.".format(e))
     # get center frequency of signal for grouping
     try:
@@ -374,14 +365,16 @@ class ParseAttrDataFn(beam.DoFn):
       'center_freq':cfreq.decode('utf-8'),
       'sample_rate':srate.decode('utf-8'),
       'localdatetime': dt.decode('utf-8')#,
-      # 'timestamp': timestamp.decode('utf-8')
     }
-    # yield element
 
 # ParDo Transform: creates tuple with center_freq as key and adds timestamp
 class CreateFreqTupleFn(beam.DoFn):
+  """ Creates tuple in output format below from dictionary input format below.
+      Input Format:   {'data': float, 'center_freq': float, 'sample_rate':float, 'localdatetime': string}\n
+      Output Format:  (center_freq,(localdatetime,data))
+  """
   def process(self, element):
-    # PCollecton format: [key,value,google_ts]
+    # PCollecton format: [key,value,localdt]
     try:
       freq = float(element['center_freq'])
       data = float(element['data'])
@@ -390,61 +383,89 @@ class CreateFreqTupleFn(beam.DoFn):
       logging.critical("ParseAttrDataFn(): freq/data/time extraction error \'{}\'.".format(e))
         
     key_value = (freq,(time,data))
-    logging.info("CreateFreqTupleFn(): key_value -> {}".format(key_value))
-    # yield window.TimestampedValue(key_value,google_ts)
+    # logging.info("CreateFreqTupleFn(): key_value -> {}".format(key_value))
     yield key_value
 
 # Transform:   
-class SignalDetector1Fn(beam.DoFn):
-  """ Detects signal on streaming data given a threshold
+class ChannelAvgFn(beam.DoFn):
+  """ Takes a PCollection of channel (frequency band) data formatted as shown 
+      below and returns the channel average PSD in format shown below.
 
+      Input Format:  (center_freq,[(ev_timestamp1,ev1),...,(ev_timestampN,evN)])
+      Output Format: (center_freq,channel_avg,window_start,window_end)
   """
-  def __init__(self,threshold=0): 
-    self.threshold = threshold
-    self.num_parse_errors = Metrics.counter(self.__class__, 'num_parse_errors')
-
   # main process
-  def process(self,element):
-    logging.debug("\nSignalDetector1Fn(): Data dump -> {}".format(element))
-    logging.debug("\nSignalDetector1Fn(): Threshold -> {}".format(self.threshold))
+  def process(self,element,window=beam.DoFn.WindowParam):
+    # logging.debug("\nChannelAvgFn(): Data dump -> {}".format(element))
+    # logging.debug("\nChannelAvgFn(): Threshold -> {}".format(self.threshold))
     
-    # local variables
+    win_start = window.start.to_utc_datetime().strftime(DT_FORMAT)
+    win_end = window.end.to_utc_datetime().strftime(DT_FORMAT)
+    
     try:
-      psd_float = float(element[1])
+      events = element[1]
     except Exception as e:
-      logging.info("SignalDetector1Fn(): failed to cast data to float \
-                        (error: {0}, data: {1})".format(e, element[1]))
-     
-    # if psd_float >= self.threshold:
-    # logging.info("Signal @ {0}? ...... {1}".format(element[0],psd_float))
-    # logging.info("Threshold .......... {}".format(self.threshold))
-    
-    if psd_float >= self.threshold:
-      yield element
-    else:
-      return  # Return nothing
+      logging.critical("ChannelAvgFn(): failed to assign element list. ({})"
+                        .format(e))
 
+    # grab each of the PSD elements from the list of (timestamp,psd) tuples
+    psds = []
+    for event in events:
+      psds.append(event[1]) # event = (timestamp,psd)
     
+    # calculate channnel average
+    if len(psds) != 0:    
+      channel_avg = sum(psds)/float(len(psds))
+      # logging.info("ChannelAvgFn(): channel_avg -> {}".format(channel_avg))
+    else:
+      channel_avg = 0.0
+
+    # create new (center_freq,channel_avg,(window_start,window_end)) tuple
+    key_value = (element[0],channel_avg,(win_start,win_end))
+
+    logging.info(">>>>> ChannelAvgFn(): Result -> {}".format(key_value))
+    yield key_value
+
     # Transform:   
-class FormatOutputFn(beam.DoFn):
+class FormatOutputRawFn(beam.DoFn):
   """ Formats output
 
   """
-  def __init__(self,): 
-    self.num_parse_errors = Metrics.counter(self.__class__, 'num_parse_errors')
-
   # main process
-  def process(self,element,window=beam.DoFn.WindowParam):
+  def process(self,element):#,window=beam.DoFn.WindowParam):
+    logging.info(">>>>> FormatOutputRawFn(): Result -> {}".format(element))
+# END PARDOS
+######################################################
 
-    win_start = window.start.to_utc_datetime().strftime(DT_FORMAT)
-    win_end = window.end.to_utc_datetime().strftime(DT_FORMAT)
 
-    logging.info("output element ....... {}".format(element))
-    logging.info("window start ......... {}".format(win_start))
-    logging.info("window end ........... {}\n".format(win_end))
-    # END PARDOS
-  ######################################################
+######################################################
+# CUSTOM PTRANSFORMS
+#
+# # PTransform: Filters noise from input based on user defined threshold
+# established at runtime (-threshold, -d) and provides signals of interest
+class SignalDetector(beam.PTransform):
+  """A transform to filter the non-peak (noise) out of the input signal. This
+  transform assumes the input format below and provides the output format shown
+  below.
+  
+  Input Format:   {'data': float, 'center_freq': str, 'sample_rate':str, 'localdatetime': str}\n
+  Output Format:  (center_freq,(localdatetime,data'))  where data' is data > threshold
+  """
+  def __init__(self, threshold):
+    super(SignalDetector, self).__init__()
+    self.threshold = threshold
 
+  def expand(self, pcoll):
+
+    # logging.info('SignalDetector(): averaging {} \n'.format(self.target)) 
+    signal = (pcoll | 'PeakFilter' >> beam.Filter(lambda parsed:
+                                        float(parsed['data']) >= self.threshold)  # filter noise from data
+                    | 'CreateTuple' >> beam.ParDo(CreateFreqTupleFn()))  # -> (center_freq,(localdatetime,data))
+    return signal
+            
+
+# END CUSTOM PTRANSFORMS
+######################################################
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.INFO)
   run()
