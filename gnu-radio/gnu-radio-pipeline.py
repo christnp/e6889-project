@@ -68,6 +68,7 @@ OUT_TOPIC = 'output'
 DFLOW_TEMP = 'gs://e6889-bucket/tmp/'
 STAGE = 'gs://e6889-bucket/stage/'
 RUNNER = 'DataflowRunner'
+THRESHOLD = 1.0
 
 ######################################################
 # HELPER FUNCTIONS
@@ -119,23 +120,25 @@ def run(argv=None):
     parser.add_argument('--temp', '-t',
                         dest='dflow_temp',
                         default=DFLOW_TEMP,
-                        help='Google dataflow temporary storage. Defauls ' \
+                        help='Google dataflow temporary storage. Default: ' \
                               '\'gs://e6889-bucket/tmp/\'')
     parser.add_argument('--stage', '-s',
                         dest='stage',
                         default=STAGE,
                         help='Google dataflow staging arge. Default: ' \
                               '\'gs://e6889-bucket/stage/\'')
-    # parser.add_argument('--target', '-g',
-    #                     dest='target',
-    #                     default=TARGET_UTILITY,
-    #                     help='Target event trigger to be averaged. Default: '\
-    #                           '\'Average\'')
+    parser.add_argument('--threshold', '-d',
+                        dest='threshold',
+                        default=THRESHOLD,
+                        type=float,
+                        help='Threshold for signal detection. Signals above '\
+                             'the threshold are consider not noise. Default: '\
+                              '\'1\'')
     parser.add_argument('--runner', '-r',
                         dest='runner',
                         default=RUNNER,
-                        help='Target utility to be averaged. Default: ' \
-                              '\'DP2_WholeHouse_Power_Val\'')
+                        help='TBeam runner to be used. Default: '\
+                              '\'Dataflowrunner\'')
     args = parser.parse_args()
     project = args.project
     gr_topic = args.gr_topic
@@ -143,7 +146,7 @@ def run(argv=None):
     out_topic = args.out_topic
     dflow_temp = args.dflow_temp
     stage = args.stage
-    # target = args.target
+    threshold = args.threshold
     runner = args.runner
 
     #static
@@ -266,32 +269,25 @@ def run(argv=None):
                                   subscription=sub_path,
                                   with_attributes=True,
                                   timestamp_attribute='timestamp'))
-                                  # cannot use .with_output_types(bytes) with atttributes
-# | ReadFromPubSub('projects/fakeprj/topics/a_topic',
-#                   None, 'a_label', with_attributes=True,
-#                   timestamp_attribute='time')
 
-    def printattr(element):
-        # logging.info("\ndata -> {}".format(element.data))
-        # logging.info("attributes -> {}\n".format(element.attributes))
-        logging.info("\ndata -> {}".format(element['data']))
-        logging.info("center_freq -> {}".format(element['center_freq']))
-        logging.info("sample_rate -> {}".format(element['sample_rate']))
-        logging.info("datetime -> {}\n".format(element['localdatetime']))
-        yield element
-        # logging.info("\nHERE I AM\n")
-
-        # if element.attributes:
-        #   for key,value in element.attributes.items():
-        #     logging.info("attribute -> key: {}, value: {}\n".format(key,value))
-
-
-    payload = (data | 'ParseData' >> beam.ParDo(ParseAttrDataFn())
+    peaks = (data | 'ParseData' >> beam.ParDo(ParseAttrDataFn())#'RfTuple' >> beam.Map(lambda pubsub: 
+                                # (float(pubsub.attributes['center_freq']),
+                                # float(pubsub.data)))
+                    | 'PeakFilter' >> beam.Filter(lambda parsed:  
+                                        float(parsed['data']) >= threshold) # filter noise
                     | 'CreateTuple' >> beam.ParDo(CreateFreqTupleFn()))
-                    # | 'printattr' >> beam.Map(printattr))
+                    # | 'CreateRFTuple' >> beam.Map(lambda parsed: 
+                    #                     (float(parsed['center_freq']),
+                    #                     (parsed['localdatetime'],                                        
+                    #                     float(parsed['data'])))))                    
+                    #| 'PeakMarker' >> beam.Map(lambda peak: (peak[0],1)))
 
-    signal1 = (payload | 'SignalDet1' >> beam.ParDo(SignalDetector1Fn(1)))
+    signal1 = (peaks  | 'Window' >> beam.WindowInto(window.SlidingWindows(60,59))
+                      # | 'SignalDet1' >> beam.ParDo(SignalDetector1Fn(threshold)))
+                      | 'Group' >> beam.GroupByKey())
 
+    output = signal1 | 'FormatOutput' >> beam.ParDo(FormatOutputFn()
+    )
     # signal2 = (payload  | 'Window' >> beam.WindowInto(window.SlidingWindows(60,59))
                         # |'SignalDet2' >> beam.ParDo(SignalDetector2Fn()))
 
@@ -336,7 +332,7 @@ class ParseAttrDataFn(beam.DoFn):
 
   # main process
   def process(self,element):
-    logging.info('ParseAttrDataFn(): expected {}\n'.format(element)) 
+    logging.debug('ParseAttrDataFn(): Data dump ->  {}\n'.format(element)) 
 
     # get data
     try:
@@ -346,28 +342,28 @@ class ParseAttrDataFn(beam.DoFn):
       self.num_parse_errors.inc()
       logging.critical("ParseAttrDataFn(): data type conversion error \'{}\'.".format(e))
     # get timestamp for windowing based on collection time
-    try:
-      timestamp = element.attributes['timestamp'].encode('utf-8')
-    except Exception as e:
-      timestamp = 0
-      self.num_parse_errors.inc()
-      logging.critical("ParseAttrDataFn(): timestamp parse error \'{}\'.".format(e))
+    # try:
+    #   timestamp = element.attributes['timestamp']
+    # except Exception as e:
+    #   timestamp = 0
+    #   self.num_parse_errors.inc()
+    #   logging.critical("ParseAttrDataFn(): timestamp parse error \'{}\'.".format(e))
     # get local date/time string
     try:
-      dt = element.attributes['localdatetime'].encode('utf-8')
+      dt = element.attributes['localdatetime']
     except Exception as e:
       dt = ''
       self.num_parse_errors.inc()
       logging.critical("ParseAttrDataFn(): datetime parse error  \'{}\'.".format(e))
     # get center frequency of signal for grouping
     try:
-      cfreq = element.attributes['center_freq'].encode('utf-8')
+      cfreq = element.attributes['center_freq']
     except Exception as e: 
       cfreq = None
       logging.warning("ParseAttrDataFn(): center_freq parse error \'{}\'.".format(e))
     # get sample rate (not used as of 2019/04/25)
     try:
-      srate = element.attributes['sample_rate'].encode('utf-8')
+      srate = element.attributes['sample_rate']
     except Exception as e:
       srate = None
       logging.warning("ParseAttrDataFn(): sample parse error \'{}\'.".format(e))
@@ -375,10 +371,10 @@ class ParseAttrDataFn(beam.DoFn):
     # return a dictionary for subsequent processing.
     yield {
       'data':data,
-      'center_freq':cfreq,
-      'sample_rate':srate,
-      'localdatetime': dt,
-      'timestamp': timestamp
+      'center_freq':cfreq.decode('utf-8'),
+      'sample_rate':srate.decode('utf-8'),
+      'localdatetime': dt.decode('utf-8')#,
+      # 'timestamp': timestamp.decode('utf-8')
     }
     # yield element
 
@@ -386,15 +382,15 @@ class ParseAttrDataFn(beam.DoFn):
 class CreateFreqTupleFn(beam.DoFn):
   def process(self, element):
     # PCollecton format: [key,value,google_ts]
-    key_value = (element['center_freq'],element['data'])
     try:
-      google_ts = element['timestamp']
+      freq = float(element['center_freq'])
+      data = float(element['data'])
+      time = element['localdatetime']
     except Exception as e:
-      google_ts = 0
-      logging.warning("ParseAttrDataFn(): unitx_ts cast error \'{}\'.".format(e))
-
-    logging.info('CreateFreqTupleFn(): ts={}, kv={}\n'.format(google_ts,key_value)) 
-    
+      logging.critical("ParseAttrDataFn(): freq/data/time extraction error \'{}\'.".format(e))
+        
+    key_value = (freq,(time,data))
+    logging.info("CreateFreqTupleFn(): key_value -> {}".format(key_value))
     # yield window.TimestampedValue(key_value,google_ts)
     yield key_value
 
@@ -408,24 +404,44 @@ class SignalDetector1Fn(beam.DoFn):
     self.num_parse_errors = Metrics.counter(self.__class__, 'num_parse_errors')
 
   # main process
+  def process(self,element):
+    logging.debug("\nSignalDetector1Fn(): Data dump -> {}".format(element))
+    logging.debug("\nSignalDetector1Fn(): Threshold -> {}".format(self.threshold))
+    
+    # local variables
+    try:
+      psd_float = float(element[1])
+    except Exception as e:
+      logging.info("SignalDetector1Fn(): failed to cast data to float \
+                        (error: {0}, data: {1})".format(e, element[1]))
+     
+    # if psd_float >= self.threshold:
+    # logging.info("Signal @ {0}? ...... {1}".format(element[0],psd_float))
+    # logging.info("Threshold .......... {}".format(self.threshold))
+    
+    if psd_float >= self.threshold:
+      yield element
+    else:
+      return  # Return nothing
+
+    
+    # Transform:   
+class FormatOutputFn(beam.DoFn):
+  """ Formats output
+
+  """
+  def __init__(self,): 
+    self.num_parse_errors = Metrics.counter(self.__class__, 'num_parse_errors')
+
+  # main process
   def process(self,element,window=beam.DoFn.WindowParam):
 
-    logging.info("\nExpected -> {}".format(element))
-    # win_start = window.start.to_utc_datetime().strftime(DT_FORMAT)
-    # win_end = window.end.to_utc_datetime().strftime(DT_FORMAT)
-    win_start = win_end = 0
-    try:
-      logging.info("\ndata ....... {}".format(element['data']))
-      logging.info("datetime ..... {}".format(element['localdatetime']))
-      logging.info("center_freq .. {}".format(element['center_freq']))
-      logging.info("sample_rate .. {}".format(element['sample_rate']))
-      logging.info("threshold .... {}".format(self.threshold))
-      logging.info("signal? ...... {}".format((True if element['data'] >= self.threshold else False)))
-      logging.info("win start .... {}".format(win_start))
-      logging.info("win end ...... {}\n".format(win_end))
-      
-    except Exception as e:
-      print("Print failure....")
+    win_start = window.start.to_utc_datetime().strftime(DT_FORMAT)
+    win_end = window.end.to_utc_datetime().strftime(DT_FORMAT)
+
+    logging.info("output element ....... {}".format(element))
+    logging.info("window start ......... {}".format(win_start))
+    logging.info("window end ........... {}\n".format(win_end))
     # END PARDOS
   ######################################################
 
