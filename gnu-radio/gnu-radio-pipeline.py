@@ -36,9 +36,11 @@ import logging
 import sys
 import os
 import time
+import json
 
 import apache_beam as beam # pylint: disable=import-error
 from apache_beam import window # pylint: disable=import-error
+from apache_beam.pvalue import AsIter # pylint: disable=import-error
 from apache_beam.metrics.metric import Metrics # pylint: disable=import-error
 from apache_beam.transforms.core import Windowing # pylint: disable=import-error
 # from apache_beam.transforms.window import FixedWindows # pylint: disable=import-error
@@ -64,7 +66,7 @@ GR_TABLE = 'rf_samples'
 DATASET = 'project_data'
 
 # other constants
-OUT_TOPIC = 'output'
+BEAM_TOPIC = 'beam-top'
 DFLOW_TEMP = 'gs://e6889-bucket/tmp/'
 STAGE = 'gs://e6889-bucket/stage/'
 RUNNER = 'DataflowRunner'
@@ -81,7 +83,11 @@ def gc_timestamp():
     # get Eastern Time and return time in desired format
     nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
     return nyc_datetime.strftime(GC_DT_FORMAT)
+def json_encode(x):
+  return json.dumps(x)
 
+def json_decode(x):
+  return json.loads(x)
 # END HELPER FUNCTIONS
 ######################################################
 
@@ -112,8 +118,8 @@ def run(argv=None):
                           'already exist. '\
                           'Default: \'gnuradio-sub\'')
     parser.add_argument('--output', '-o',
-                        dest='out_topic',
-                        default=OUT_TOPIC,
+                        dest='bm_topic',
+                        default=BEAM_TOPIC,
                         help='Output topic for publishing. The output topic ' \
                           'must be configured prior to executing the ' \
                           'pipleine. Default: \'output\'')
@@ -143,7 +149,7 @@ def run(argv=None):
     project = args.project
     gr_topic = args.gr_topic
     gr_sub = args.gr_sub
-    out_topic = args.out_topic
+    bm_topic = args.bm_topic
     dflow_temp = args.dflow_temp
     stage = args.stage
     threshold = args.threshold
@@ -156,14 +162,16 @@ def run(argv=None):
 # GOOGLE PUB/SUB CONFIG
 #
     subscriber = pubsub_v1.SubscriberClient()
-    topic_path = subscriber.topic_path(project, gr_topic)
+    grtopic_path = subscriber.topic_path(project, gr_topic)
     sub_path = subscriber.subscription_path(project,gr_sub)
     snap_path = subscriber.snapshot_path(project,GR_SNAP)
+
+    bmtopic_path = subscriber.topic_path(project, bm_topic)
 
     # create subscription; if it exists create snapshot then drain 
     try:
         subscriber.create_subscription(
-            name=sub_path, topic=topic_path,
+            name=sub_path, topic=grtopic_path,
             retain_acked_messages=True)
     except:
         print("Subscription \'{}\' exists!\n".format(sub_path))
@@ -186,14 +194,14 @@ def run(argv=None):
             subscriber.delete_subscription(sub_path)
             print("Subscription \'{}\' deleted!".format(sub_path))
             subscriber.create_subscription( name=sub_path, 
-                        topic=topic_path, retain_acked_messages=True)
+                        topic=grtopic_path, retain_acked_messages=True)
             print("Subscription \'{}\' created!\n".format(sub_path))
         except:
             print("WARNING: Subscription \'{}\' recreation failed!\n"
                 .format(sub_path))
             pass
 
-    logging.info("Google Pub/Sub topic: \'{}\'".format(topic_path))
+    logging.info("Google Pub/Sub topic: \'{}\'".format(grtopic_path))
     logging.info("Google Pub/Sub subscription: \'{}\'\n".format(sub_path))
 # END GOOGLE PUB/SUB CONFIG
 ######################################################
@@ -265,7 +273,7 @@ def run(argv=None):
     # Define pipline
     p = beam.Pipeline(options=pipeline_options)
     data = (p | 'GetData' >>  beam.io.ReadFromPubSub(  
-                                  #   topic=topic_path,
+                                  #   topic=grtopic_path,
                                   subscription=sub_path,
                                   with_attributes=True,
                                   timestamp_attribute='timestamp')
@@ -273,23 +281,56 @@ def run(argv=None):
             # (float(pubsub.attributes['center_freq']),
             # float(pubsub.data))))
 
-    # data -> { 'data':X, 'center_freq':X, 'sample_rate':X, 'localdatetime':X }
-    signal1 = (data | 'SignalDet' >> SignalDetector(threshold)
+    # input: data -> { 'data':X, 'center_freq':X, 'sample_rate':X, 'localdatetime':X }
+    # output: signal1[0] = (center_freq,(localdatetime,freq_data))
+    #         signal1[1] = (center_freq,(localdatetime,1))
+    signal1 = (data | 'SignalDetector' >> SignalDetector(threshold)
                     # | 'PeakMarker' >> beam.Map(lambda peak: (peak[0],1)))
-                    | 'FormatOutput' >> beam.ParDo(FormatOutputRawFn()))
+                    )
+    debug1 = signal1[0] | 'DebugOutput' >> beam.ParDo(DebugOutputFn())
+
+    congestion = (signal1[1]  | 'WindowCongestion' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
+                        | 'GroupCongestion' >> beam.GroupByKey() # group by center_freq, then average
+                        | 'ChannelCongestion' >> beam.ParDo(ChannelCongestionFn()))
 
     # data -> { 'data':X, 'center_freq':X, 'sample_rate':X, 'localdatetime':X }
-    signal2 = (data | 'CreateTuple' >> beam.ParDo(CreateFreqTupleFn()) # (center_freq,(localdatetime,data))
+    average = (data | 'CreateTupleAverage' >> beam.ParDo(CreateFreqTupleFn()) # (center_freq,(localdatetime,data))
                     # | 'CreateRFTuple' >> beam.Map(lambda parsed: 
                     #                     (float(parsed['center_freq']),
                     #                     (parsed['localdatetime'],                                        
                     #                     float(parsed['data'])))))                    
                     
-                      | 'Window' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
-                      | 'Group' >> beam.GroupByKey() # group by center_freq, then average
-                      | 'ChannelAverage' >> beam.ParDo(ChannelAvgFn()))
+                      | 'WindowAverage' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
+                      | 'GroupAverage' >> beam.GroupByKey() # group by center_freq, then average
+                      | 'ChannelAverage' >> beam.ParDo(ChannelAmpAvgFn()))
 
-    # https://stackoverflow.cotopic_pathm/questions/51621792/streaming-pipelines-with-bigquery-sinks-in-python
+    output = ({'chan_congestion':congestion, 'chan_average':average} 
+    # output = ([average,congestion] 
+                      | 'GroupAll' >> beam.CoGroupByKey()
+                      | 'FormatOutput' >> beam.ParDo(FormatOutputFn()))
+    
+    def format_output(averages, congestions):
+      
+      # try:
+      #   decoded = json.dumps(json_input)
+    
+      #   # Access data
+      #   # for x in decoded['persons']:
+      #   #     print x['name']
+ 
+      # except (ValueError, KeyError, TypeError):
+      #     print("Pipeline.format_output(): JSON format error")
+
+      logging.info("+++ Average: {}\n".format(average))
+      logging.info("+++ Congestion: {}\n".format(congestion))
+      
+      yield [average,congestion]
+
+    # output = average | 'FormatOutput' >> beam.Map(format_output, AsIter(congestion)) # congestion pcoll as side input
+
+    #output -> 
+    # output | beam.io.WriteToPubSub(topic=bmtopic_path)
+    # https://stackoverflow.cogrtopic_pathm/questions/51621792/streaming-pipelines-with-bigquery-sinks-in-python
     # Write data to BigQuery
     # payload | beam.io.WriteToBigQuery(
     #   table_spec,
@@ -321,13 +362,7 @@ class ParseAttrDataFn(beam.DoFn):
         "timestamp:"      "YYYY-MM-DDTHH:MM:SS.SSSZ" // RFC 3339 format, UTC 
         "center_freq":    "VALUE_IN_HZ" // float
         "sample_rate":    "VALUE_IN_SAMPLE_PER_SEC" // float
-      }
-    }
-
-  """
-  # def __init__(self): 
-    # self.num_parse_errors = Metrics.counter(self.__class__, 'num_parse_errors')
-
+      }"""
   # main process
   def process(self,element):
     # logging.debug('ParseAttrDataFn(): Data dump ->  {}\n'.format(element)) 
@@ -387,17 +422,17 @@ class CreateFreqTupleFn(beam.DoFn):
     yield key_value
 
 # Transform:   
-class ChannelAvgFn(beam.DoFn):
+class ChannelAmpAvgFn(beam.DoFn):
   """ Takes a PCollection of channel (frequency band) data formatted as shown 
       below and returns the channel average PSD in format shown below.
 
       Input Format:  (center_freq,[(ev_timestamp1,ev1),...,(ev_timestampN,evN)])
-      Output Format: (center_freq,channel_avg,window_start,window_end)
+      Output Format: (center_freq,channel_avg,(window_start,window_end))
   """
   # main process
   def process(self,element,window=beam.DoFn.WindowParam):
-    # logging.debug("\nChannelAvgFn(): Data dump -> {}".format(element))
-    # logging.debug("\nChannelAvgFn(): Threshold -> {}".format(self.threshold))
+    logging.debug("\n>>>>> ChannelAmpAvgFn(): Data dump -> {}".format(element))
+    # logging.debug("\nChannelAmpAvgFn(): Threshold -> {}".format(self.threshold))
     
     win_start = window.start.to_utc_datetime().strftime(DT_FORMAT)
     win_end = window.end.to_utc_datetime().strftime(DT_FORMAT)
@@ -405,35 +440,105 @@ class ChannelAvgFn(beam.DoFn):
     try:
       events = element[1]
     except Exception as e:
-      logging.critical("ChannelAvgFn(): failed to assign element list. ({})"
+      logging.critical("ChannelAmpAvgFn(): failed to assign element list. ({})"
                         .format(e))
 
     # grab each of the PSD elements from the list of (timestamp,psd) tuples
     psds = []
+    timestamps = []
     for event in events:
-      psds.append(event[1]) # event = (timestamp,psd)
-    
+      # event = (timestamp,psd)
+      psds.append(event[1]) 
+      timestamps.append(event[0])
+
+    logging.debug(">>>>> ChannelAmpAvgFn(): PSDS -> {}".format(psds))
+
     # calculate channnel average
     if len(psds) != 0:    
       channel_avg = sum(psds)/float(len(psds))
-      # logging.info("ChannelAvgFn(): channel_avg -> {}".format(channel_avg))
+      # logging.info("ChannelAmpAvgFn(): channel_avg -> {}".format(channel_avg))
     else:
       channel_avg = 0.0
 
     # create new (center_freq,channel_avg,(window_start,window_end)) tuple
-    key_value = (element[0],channel_avg,(win_start,win_end))
+    key_value = (element[0],(channel_avg,win_start,win_end))
 
-    logging.info(">>>>> ChannelAvgFn(): Result -> {}".format(key_value))
+    logging.info(">>>>> ChannelAmpAvgFn(): Result -> {}".format(key_value))
+    try:
+      logging.info(">>>>> ChannelAmpAvgFn(): Time 1: {0}, Time 2: {1}".format(timestamps[0],timestamps[-1]))
+    except:
+      pass
     yield key_value
 
+class ChannelCongestionFn(beam.DoFn):
+  """ Takes a PCollection of channel (frequency band) data formatted as shown 
+      below and returns the channel average PSD in format shown below.
+
+      Input Format:  (center_freq,[(ev_timestamp1,ev1),...,(ev_timestampN,evN)])
+      Output Format: (center_freq,channel_avg,(window_start,window_end))
+  """
+  # main process
+  def process(self,element,window=beam.DoFn.WindowParam):
+    # logging.debug("\nChannelCongestionFn(): Data dump -> {}".format(element))
+    # logging.debug("\nChannelCongestionFn(): Threshold -> {}".format(self.threshold))
+    
+    win_start = window.start.to_utc_datetime().strftime(DT_FORMAT)
+    win_end = window.end.to_utc_datetime().strftime(DT_FORMAT)
+    
+    try:
+      events = element[1]
+    except Exception as e:
+      logging.critical("ChannelCongestionFn(): failed to assign element list. ({})"
+                        .format(e))
+
+    # grab each of the count elements from the list of (timestamp,1) tuples
+    counts = []
+    timestamps = []
+    for event in events:
+      # event = (timestamp,1)
+      counts.append(event[1]) 
+      timestamps.append(event[0])
+    
+    # create new (center_freq,channel_avg,(window_start,window_end)) tuple
+    key_value = (element[0],(sum(counts),win_start,win_end))
+
+    logging.info(">>>>> ChannelCongestionFn(): Result -> {}".format(key_value))
+    try:
+      logging.info(">>>>> ChannelCongestionFn(): Time 1: {0}, Time 2: {1}".format(timestamps[0],timestamps[-1]))
+    except:
+      pass
+    yield key_value
+
+class FormatOutputFn(beam.DoFn):
+  """ Formats output for Google PubSub
+      Input Format:   
+      {'chan_congestion': (center_freq,channel_cong,(window_start,window_end)),\n
+        'chan_average': (center_freq,channel_avg,(window_start,window_end))}\n
+      
+      Output Format:  str(data).encode("utf-8")
+
+  """
+  # main process
+  def process(self,element):#,window=beam.DoFn.WindowParam):
+
+    #logging.info(">>>>> FormatOutputFn(): Result -> {}".format(str(element).encode("utf-8")))
+    logging.info(">>>>> FormatOutputFn(): Congestion -> {}".format(element))
+    # formatApply = "AVG({}), {}, {}, {}"
+    # formattedOutput = formatApply.format(rawOutput[0],rawOutput[1],start,end)
+  
+    # logging.info('FormatOutputFn() {}\n'.format(formattedOutput))
+
+    yield element #str(element).encode("utf-8")
+
     # Transform:   
-class FormatOutputRawFn(beam.DoFn):
+class DebugOutputFn(beam.DoFn):
   """ Formats output
 
   """
   # main process
   def process(self,element):#,window=beam.DoFn.WindowParam):
-    logging.info(">>>>> FormatOutputRawFn(): Result -> {}".format(element))
+    # logging.info(">>>>> DebugOutputFn(): Result -> {}".format(element))
+    return None
 # END PARDOS
 ######################################################
 
@@ -456,12 +561,22 @@ class SignalDetector(beam.PTransform):
     self.threshold = threshold
 
   def expand(self, pcoll):
+    def peakMarker(element):
+      element['data'] = 1
+      return element
 
     # logging.info('SignalDetector(): averaging {} \n'.format(self.target)) 
     signal = (pcoll | 'PeakFilter' >> beam.Filter(lambda parsed:
-                                        float(parsed['data']) >= self.threshold)  # filter noise from data
-                    | 'CreateTuple' >> beam.ParDo(CreateFreqTupleFn()))  # -> (center_freq,(localdatetime,data))
-    return signal
+                                        float(parsed['data']) >= self.threshold))  # filter noise from data
+
+    # return tuple with frequency PSD values as data            
+    freq = signal | 'CreateTupleFreq' >> beam.ParDo(CreateFreqTupleFn())  # -> (center_freq,(localdatetime,data))
+
+    # return tuple with event count values as data
+    count = (signal | 'PeakMarker' >> beam.Map(peakMarker)#beam.Map(lambda peak: (peak[0],1))
+                    | 'CreateTupleCount' >> beam.ParDo(CreateFreqTupleFn()))
+
+    return [freq,count]
             
 
 # END CUSTOM PTRANSFORMS

@@ -3,7 +3,7 @@
 ##################################################
 # GNU Radio Python Flow Graph
 # Title: Rf Scanner Pubsub
-# Generated: Sun Apr 28 14:24:20 2019
+# Generated: Mon Apr 29 21:04:37 2019
 ##################################################
 
 from distutils.version import StrictVersion
@@ -134,6 +134,42 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
 
         self._qtgui_waterfall_sink_x_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0.pyqwidget(), Qt.QWidget)
         self.top_layout.addWidget(self._qtgui_waterfall_sink_x_0_win)
+        self.qtgui_vector_sink_f_0 = qtgui.vector_sink_f(
+            fft_size,
+            center_freq-fft_size/2,
+            1.0,
+            "Frequency (Hz)",
+            "Power (dB)",
+            "",
+            1 # Number of inputs
+        )
+        self.qtgui_vector_sink_f_0.set_update_time(0.10)
+        self.qtgui_vector_sink_f_0.set_y_axis(-100, 10)
+        self.qtgui_vector_sink_f_0.enable_autoscale(False)
+        self.qtgui_vector_sink_f_0.enable_grid(False)
+        self.qtgui_vector_sink_f_0.set_x_axis_units("Hz")
+        self.qtgui_vector_sink_f_0.set_y_axis_units("dB")
+        self.qtgui_vector_sink_f_0.set_ref_level(0)
+
+        labels = ['', '', '', '', '',
+                  '', '', '', '', '']
+        widths = [1, 1, 1, 1, 1,
+                  1, 1, 1, 1, 1]
+        colors = ["blue", "red", "green", "black", "cyan",
+                  "magenta", "yellow", "dark red", "dark green", "dark blue"]
+        alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
+                  1.0, 1.0, 1.0, 1.0, 1.0]
+        for i in xrange(1):
+            if len(labels[i]) == 0:
+                self.qtgui_vector_sink_f_0.set_line_label(i, "Data {0}".format(i))
+            else:
+                self.qtgui_vector_sink_f_0.set_line_label(i, labels[i])
+            self.qtgui_vector_sink_f_0.set_line_width(i, widths[i])
+            self.qtgui_vector_sink_f_0.set_line_color(i, colors[i])
+            self.qtgui_vector_sink_f_0.set_line_alpha(i, alphas[i])
+
+        self._qtgui_vector_sink_f_0_win = sip.wrapinstance(self.qtgui_vector_sink_f_0.pyqwidget(), Qt.QWidget)
+        self.top_layout.addWidget(self._qtgui_vector_sink_f_0_win)
         self.qtgui_time_sink_x_1_0 = qtgui.time_sink_f(
         	1024, #size
         	samp_rate, #samp_rate
@@ -141,7 +177,7 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         	1 #number of inputs
         )
         self.qtgui_time_sink_x_1_0.set_update_time(0.10)
-        self.qtgui_time_sink_x_1_0.set_y_axis(-100, 10)
+        self.qtgui_time_sink_x_1_0.set_y_axis(-10, 15)
 
         self.qtgui_time_sink_x_1_0.set_y_label('Amplitude', "")
 
@@ -187,13 +223,16 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         self.fft_vxx_0 = fft.fft_vcc(fft_size, True, (window.blackmanharris(1024)), True, 1)
         self.blocks_vector_to_stream_0 = blocks.vector_to_stream(gr.sizeof_float*1, fft_size)
         self.blocks_stream_to_vector_0 = blocks.stream_to_vector(gr.sizeof_gr_complex*1, fft_size)
+        self.blocks_nlog10_ff_0 = blocks.nlog10_ff(10, fft_size, 0)
         self.blocks_complex_to_mag_squared_0 = blocks.complex_to_mag_squared(fft_size)
-        self.GooglePubSub_google_publisher_py_b_0_0 = GooglePubSub.google_publisher_py_b('/home/christnp/Development/e6889/Google/ELEN-E6889-227a1ecc78b6.json','elen-e6889','gnuradio',3,center_freq,samp_rate,"max")
+        self.GooglePubSub_google_publisher_py_b_0_0 = GooglePubSub.google_publisher_py_b('/home/christnp/Development/e6889/Google/ELEN-E6889-227a1ecc78b6.json','elen-e6889','gnuradio',2,center_freq,samp_rate,"max")
 
         ##################################################
         # Connections
         ##################################################
-        self.connect((self.blocks_complex_to_mag_squared_0, 0), (self.blocks_vector_to_stream_0, 0))
+        self.connect((self.blocks_complex_to_mag_squared_0, 0), (self.blocks_nlog10_ff_0, 0))
+        self.connect((self.blocks_nlog10_ff_0, 0), (self.blocks_vector_to_stream_0, 0))
+        self.connect((self.blocks_nlog10_ff_0, 0), (self.qtgui_vector_sink_f_0, 0))
         self.connect((self.blocks_stream_to_vector_0, 0), (self.fft_vxx_0, 0))
         self.connect((self.blocks_vector_to_stream_0, 0), (self.GooglePubSub_google_publisher_py_b_0_0, 0))
         self.connect((self.blocks_vector_to_stream_0, 0), (self.qtgui_time_sink_x_1_0, 0))
@@ -236,6 +275,7 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
 
     def set_fft_size(self, fft_size):
         self.fft_size = fft_size
+        self.qtgui_vector_sink_f_0.set_x_axis(self.center_freq-self.fft_size/2, 1.0)
 
     def get_cutoff(self):
         return self.cutoff
@@ -251,6 +291,7 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         self.center_freq = center_freq
         self.rtlsdr_source_0.set_center_freq(self.center_freq, 0)
         self.qtgui_waterfall_sink_x_0.set_frequency_range(self.center_freq, self.samp_rate)
+        self.qtgui_vector_sink_f_0.set_x_axis(self.center_freq-self.fft_size/2, 1.0)
 
 
 def main(top_block_cls=rf_scanner_pubsub, options=None):

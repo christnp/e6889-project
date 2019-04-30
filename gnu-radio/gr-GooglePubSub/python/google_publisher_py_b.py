@@ -101,12 +101,9 @@ class google_publisher_py_b(gr.sync_block):
     # numpy.arry (in0) to unicode or bytes via in0.astype("U") or .astype("B")
     def publish(self,in0):    
         
-        ts_google,ts_nyc = self.timestamp()
+       
         attr_data = 0.0
         if time.time() - self.message_delay >= self.delay_start:
-            # debug message
-            logging.debug("[{0}] DATA (size={1}) = {2}".format(ts_nyc,len(in0),in0))
-
             # calculate the attribute value (chosen in GNU Radio block)
             if (self.attribute == "average"):
                 attr_data = sum(in0)/float(len(in0))
@@ -119,6 +116,7 @@ class google_publisher_py_b(gr.sync_block):
                 print("No attribute passed to Python code...?\n")
             
             # publish the data to topic and log the event 
+            ts_google,ts_nyc = self.timestamp()
             self.publisher.publish(self.topic_path,
                     data=str(attr_data).encode("utf-8"),
                     timestamp =str(ts_google), # use "timestamp" for beam PubSub timestamp_attribute

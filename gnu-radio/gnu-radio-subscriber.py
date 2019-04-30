@@ -6,12 +6,12 @@
 # 
 # Author:   Nick Christman, nc2677
 # Date:     2019/04/02
-# Program:  test_subscriber.py
+# Program:  gnu_radio_subscriber.py
 # SDK(s):   Google Cloud Pub/Sub API
 
 
 '''This file is designed to subscibe to an existing Google Pub/Sub topic. A
-subscription is created.
+subscription is created. Results are saved to a CSV file for offline analysis.
 
  References:
  1. https://codelabs.developers.google.com/codelabs/cpb104-pubsub/
@@ -23,20 +23,20 @@ import logging
 import sys
 import os
 import re
-import ipaddress
-import socket
 from datetime import datetime
+import csv
 #import datetime
 import time
 import gzip
 from google.cloud import pubsub
 
 # constants
-TIME_FORMAT = '%m/%d/%Y %H:%M:%S.%f %p'
+DT_FORMAT = '%Y-%m-%d %H:%M:%S'
+GC_DT_FORMAT = '%Y%m%d-%H%M%S'
 PROJECT = 'elen-e6889'
-TOPIC_IN = 'gnuradio'
-SUBSCRIPTION = 'gnradio-sub'
-OUTPUT = 'Output.txt'
+TOPIC_IN = 'beam-top'
+SUBSCRIPTION = 'beam-sub'
+CSV_OUTPUT = 'beam_output_{}.csv'.format(datetime.now())
 
 def run():
     parser = argparse.ArgumentParser()
@@ -56,7 +56,7 @@ def run():
                           'Default: \'util-sub\'')
     parser.add_argument('--output', '-o',
                         dest='output',
-                        default=OUTPUT,
+                        default=CSV_OUTPUT,
                         help='Path of output/results file. If only name is ' \
                           'provided then local directory selected.')
     parser.add_argument('--subscription', '-s',
@@ -70,7 +70,7 @@ def run():
                         
 
     args = parser.parse_args()
-    results_out = args.output
+    out_path = args.output
     project = args.project
     topic_in = args.topic_in
     subscription = args.subscription
@@ -94,6 +94,10 @@ def run():
     def callback(message):
         current = message.data
         print('Received message: {}'.format(message))
+        with open(out_path, 'a') as csvData:
+            data_csv = csv.writer(csvData)
+            data_csv.writerows(current)
+        out_path.close()
         # write line to csv
         # if csv is X bytes, close it and create new
         previous = current

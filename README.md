@@ -56,6 +56,27 @@ Q-168 Freq. Range: 462-467MHz
 Q-168 Channels: 22
 Q-168 Channel B/W: ??
 
+Tri-Cities (Richland/Kennewick/Pasco), WA PD/FD/EMS:
+* 153.600000    https://www.broadcastify.com/listen/feed/24268
+* 153.312000
+* 154.175000 	KNGP860 	RM	CSQ	SECOMM Disp	Fire Dispatch 	FMN 	Fire Dispatch 
+* 155.910000    Franklin    WA  Law Enforcement FCSO Disp   Sheriff Dispatch - Main Law Dispatch 
+* 155.312000    ? Data collected ~6pm on 04/28/2019
+* |--155.31000 	 	RM	CSQ	Benton Data	Police Data 	FMN 	Law Talk 
+* 154.982000
+* 
+
 ### GNU Radio References
 https://wiki.gnuradio.org/index.php/TutorialsCoreConcepts
 https://wiki.gnuradio.org/index.php/Guided_Tutorial_GNU_Radio_in_Python
+
+
+### Notes
+
+https://wiki.gnuradio.org/index.php/FAQ:    
+How do I know the exact voltage/power of my received input signal?
+GNU Radio processes samples coming from hardware that are mostly-linearly-proportional to the instantaneous voltage seen at the antenna terminal. But unless GNU Radio enforced a very-strict hardware interface in which those samples are rigorously calibrated to some standard amplitude by the hardware, there's no way know anything about absolute antenna voltages, only relative ones.
+
+A typical receiver chain has many stages of gain and loss, filtering, decimation, etc. This will produce a lot of uncertainty about the exact proportionality between the samples that Gnu Radio processes (typically float-point values in the range {-1.0,+1.0}) and the actual voltage as seen at the antenna port.
+
+What this means is that you must manually calibrate, over your expected operating conditions, if absolute power measurements are important to your application. This is typically accomplished use a calibrated noise source, or calibrated laboratory signal generator combined with calibrated attenuators so that you can measure at multiple points in the calibration curve.
