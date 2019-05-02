@@ -25,6 +25,7 @@ import os
 import re
 from datetime import datetime
 import csv
+import json
 #import datetime
 import time
 import gzip
@@ -91,35 +92,81 @@ def run():
     except:
         print("Subscription \'{}\' already exists!\n".format(subscription_name))
 
+     # initialize CSV (overwrites existing file)
+    with open(out_path, 'w') as csvData:
+        writer = csv.writer(csvData)
+        header = ['center_freq', 'average', 'start','end','congestion','start','end']
+        writer.writerow(header)
+    csvData.close()
+
     def callback(message):
+        import ast
+        
+        # initialize csv fieldvalues
+        center_freq = None
+        avg_val = avg_start = avg_end = None
+        cong_val = cong_start = cong_end = None
+
+        #  (center_freq, {'congestion': [(channel_cong,start_tim,end_time)],
+        # 'average': [(channel_avg,start_time,end_time)]})
         current = message.data
-        print('Received message: {}'.format(message))
+        print('Received message: {}'.format(current))
+        try:
+            current_dict = ast.literal_eval(message.data)
+            center_freq = current_dict.keys()[0]
+        except Exception as e:
+            print("Failed to convert PubSub message into dictionary. Error: {}"
+                    .format(e))
+
+        # Start getting data ready to be saved as CSV
+        try:
+            average = current_dict[center_freq]['average']
+            if average:
+                avg_val = average[0][0]
+                avg_start = average[0][1]
+                avg_end = average[0][2]
+        except Exception as e:
+            print("Failed to get average values. Error: {}".format(e))
+            pass
+        try:
+            congestion = current_dict[center_freq]['congestion']
+            if congestion:
+                cong_val = congestion[0][0]
+                cong_start = congestion[0][1]
+                cong_end = congestion[0][2]
+            print('Average: {}'.format(average))
+            print('Congestion: {}'.format(congestion))
+        except Exception as e:
+            print("Failed to get congestion values. Error: {}".format(e))
+            pass
+
+        csv_row = [center_freq,avg_val,avg_start,avg_end,cong_val,cong_start,cong_end]
+        # appends the existing CSV File
         with open(out_path, 'a') as csvData:
-            data_csv = csv.writer(csvData)
-            data_csv.writerows(current)
-        out_path.close()
-        # write line to csv
+            writer = csv.writer(csvData)
+            writer.writerow(csv_row)
+        csvData.close()         
+      
         # if csv is X bytes, close it and create new
         previous = current
         message.ack()
 
     future = subscriber.subscribe(subscription_name, callback)
-
+    print('Listening for messages on {}.'.format(subscription_name))
     #Blocks the thread while messages are coming in through the stream. Any
     # exceptions that crop up on the thread will be set on the future.
     try:
         # When timeout is unspecified, the result method waits indefinitely.
-        future.result(timeout=60)
+        future.result()#(timeout=60) # ctrl+shift+\ to kill
     except Exception as e:
-        print(
-            'Listening for messages on {} threw an Exception: {}.'.format(
+        print('Listening for messages on {} threw an Exception: {}.'.format(
                 subscription_name, e))  
     
 
 if __name__ == '__main__':
     # create Pub/Sub notification topic
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-    publisher = pubsub.PublisherClient()
-
+    publisher = pubsub.PublisherClient()   
+        
     # execute the main script    
     run()  

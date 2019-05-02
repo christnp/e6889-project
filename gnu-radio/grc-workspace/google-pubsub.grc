@@ -156,7 +156,7 @@
     </param>
     <param>
       <key>_enabled</key>
-      <value>1</value>
+      <value>0</value>
     </param>
     <param>
       <key>_coordinate</key>
@@ -278,11 +278,11 @@
     </param>
     <param>
       <key>value</key>
-      <value>154.175e6</value>
+      <value>155.312e6</value>
     </param>
     <param>
       <key>_enabled</key>
-      <value>0</value>
+      <value>1</value>
     </param>
     <param>
       <key>_coordinate</key>
@@ -318,7 +318,7 @@
     </param>
     <param>
       <key>step</key>
-      <value>0.001e6</value>
+      <value>.5e6</value>
     </param>
     <param>
       <key>stop</key>
@@ -381,11 +381,11 @@
     </param>
     <param>
       <key>step</key>
-      <value>0.001e6</value>
+      <value>0.5e6</value>
     </param>
     <param>
       <key>stop</key>
-      <value>860e6</value>
+      <value>880e6</value>
     </param>
     <param>
       <key>rangeType</key>
@@ -2408,7 +2408,7 @@
     </param>
     <param>
       <key>_enabled</key>
-      <value>1</value>
+      <value>0</value>
     </param>
     <param>
       <key>_coordinate</key>
@@ -3249,7 +3249,7 @@
     </param>
     <param>
       <key>bb_gain0</key>
-      <value>20</value>
+      <value>23</value>
     </param>
     <param>
       <key>bw0</key>
@@ -3273,7 +3273,7 @@
     </param>
     <param>
       <key>if_gain0</key>
-      <value>20</value>
+      <value>23</value>
     </param>
     <param>
       <key>iq_balance_mode0</key>
@@ -3281,7 +3281,7 @@
     </param>
     <param>
       <key>gain0</key>
-      <value>20</value>
+      <value>23</value>
     </param>
     <param>
       <key>ant10</key>
@@ -4783,12 +4783,6 @@
     <sink_key>0</sink_key>
   </connection>
   <connection>
-    <source_block_id>low_pass_filter_0_0</source_block_id>
-    <sink_block_id>qtgui_waterfall_sink_x_0</sink_block_id>
-    <source_key>0</source_key>
-    <sink_key>0</sink_key>
-  </connection>
-  <connection>
     <source_block_id>rtlsdr_source_0</source_block_id>
     <sink_block_id>blocks_multiply_const_vxx_0</sink_block_id>
     <source_key>0</source_key>
@@ -4797,6 +4791,12 @@
   <connection>
     <source_block_id>rtlsdr_source_0</source_block_id>
     <sink_block_id>low_pass_filter_0_0</sink_block_id>
+    <source_key>0</source_key>
+    <sink_key>0</sink_key>
+  </connection>
+  <connection>
+    <source_block_id>rtlsdr_source_0</source_block_id>
+    <sink_block_id>qtgui_waterfall_sink_x_0</sink_block_id>
     <source_key>0</source_key>
     <sink_key>0</sink_key>
   </connection>

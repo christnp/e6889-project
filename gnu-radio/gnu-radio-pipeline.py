@@ -278,58 +278,35 @@ def run(argv=None):
                                   with_attributes=True,
                                   timestamp_attribute='timestamp')
               | 'ParseData' >> beam.ParDo(ParseAttrDataFn()))#'RfTuple' >> beam.Map(lambda pubsub: 
-            # (float(pubsub.attributes['center_freq']),
-            # float(pubsub.data))))
-
-    # input: data -> { 'data':X, 'center_freq':X, 'sample_rate':X, 'localdatetime':X }
-    # output: signal1[0] = (center_freq,(localdatetime,freq_data))
-    #         signal1[1] = (center_freq,(localdatetime,1))
-    signal1 = (data | 'SignalDetector' >> SignalDetector(threshold)
-                    # | 'PeakMarker' >> beam.Map(lambda peak: (peak[0],1)))
-                    )
-    debug1 = signal1[0] | 'DebugOutput' >> beam.ParDo(DebugOutputFn())
-
-    congestion = (signal1[1]  | 'WindowCongestion' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
-                        | 'GroupCongestion' >> beam.GroupByKey() # group by center_freq, then average
-                        | 'ChannelCongestion' >> beam.ParDo(ChannelCongestionFn()))
-
     # data -> { 'data':X, 'center_freq':X, 'sample_rate':X, 'localdatetime':X }
+
+    # filters input based on threshold value (-threshold,-d)
+    signal1 = (data | 'SignalDetector' >> SignalDetector(threshold))
+    # debug1 = signal1[0] | 'DebugOutput' >> beam.ParDo(DebugOutputFn())
+
+    # calculates congestion using detected signals (above threshold)
+    congestion = (signal1  | 'WindowCongestion' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
+                              | 'GroupCongestion' >> beam.GroupByKey() # group by center_freq, then average
+                              | 'ChannelCongestion' >> beam.ParDo(ChannelCongestionFn()))
+    # congestion -> (center_freq,(channel_cong,data_start,data_end))
+
+    # calculates the average channel PSD (in dBs)
     average = (data | 'CreateTupleAverage' >> beam.ParDo(CreateFreqTupleFn()) # (center_freq,(localdatetime,data))
-                    # | 'CreateRFTuple' >> beam.Map(lambda parsed: 
-                    #                     (float(parsed['center_freq']),
-                    #                     (parsed['localdatetime'],                                        
-                    #                     float(parsed['data'])))))                    
-                    
-                      | 'WindowAverage' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
-                      | 'GroupAverage' >> beam.GroupByKey() # group by center_freq, then average
-                      | 'ChannelAverage' >> beam.ParDo(ChannelAmpAvgFn()))
+                    | 'WindowAverage' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
+                    | 'GroupAverage' >> beam.GroupByKey() # group by center_freq, then average
+                    | 'ChannelAverage' >> beam.ParDo(ChannelAmpAvgFn()))
+    # average -> (center_freq,(channel_avg,data_start,data_end))
 
-    output = ({'chan_congestion':congestion, 'chan_average':average} 
-    # output = ([average,congestion] 
-                      | 'GroupAll' >> beam.CoGroupByKey()
-                      | 'FormatOutput' >> beam.ParDo(FormatOutputFn()))
+    # group the results
+    output = ({'congestion':congestion, 'average':average} 
+                      | 'GroupAll' >> beam.CoGroupByKey())
+    # output -> (center_freq,{'congestion':[], 'average':[]})
     
-    def format_output(averages, congestions):
-      
-      # try:
-      #   decoded = json.dumps(json_input)
+    pubsub = (output  | 'FormatPubSub' >> beam.ParDo(FormatPubsubOutFn())) # converts above to PubSub Output
     
-      #   # Access data
-      #   # for x in decoded['persons']:
-      #   #     print x['name']
- 
-      # except (ValueError, KeyError, TypeError):
-      #     print("Pipeline.format_output(): JSON format error")
+    # output to PubSub; requires subscriber
+    pubsub | beam.io.WriteToPubSub(topic=bmtopic_path)
 
-      logging.info("+++ Average: {}\n".format(average))
-      logging.info("+++ Congestion: {}\n".format(congestion))
-      
-      yield [average,congestion]
-
-    # output = average | 'FormatOutput' >> beam.Map(format_output, AsIter(congestion)) # congestion pcoll as side input
-
-    #output -> 
-    # output | beam.io.WriteToPubSub(topic=bmtopic_path)
     # https://stackoverflow.cogrtopic_pathm/questions/51621792/streaming-pipelines-with-bigquery-sinks-in-python
     # Write data to BigQuery
     # payload | beam.io.WriteToBigQuery(
@@ -427,16 +404,12 @@ class ChannelAmpAvgFn(beam.DoFn):
       below and returns the channel average PSD in format shown below.
 
       Input Format:  (center_freq,[(ev_timestamp1,ev1),...,(ev_timestampN,evN)])
-      Output Format: (center_freq,channel_avg,(window_start,window_end))
+      Output Format: (center_freq,(channel_avg,data_start,data_end))
   """
   # main process
   def process(self,element,window=beam.DoFn.WindowParam):
     logging.debug("\n>>>>> ChannelAmpAvgFn(): Data dump -> {}".format(element))
-    # logging.debug("\nChannelAmpAvgFn(): Threshold -> {}".format(self.threshold))
-    
-    win_start = window.start.to_utc_datetime().strftime(DT_FORMAT)
-    win_end = window.end.to_utc_datetime().strftime(DT_FORMAT)
-    
+
     try:
       events = element[1]
     except Exception as e:
@@ -460,14 +433,18 @@ class ChannelAmpAvgFn(beam.DoFn):
     else:
       channel_avg = 0.0
 
-    # create new (center_freq,channel_avg,(window_start,window_end)) tuple
-    key_value = (element[0],(channel_avg,win_start,win_end))
+    # set start/end timestamps provided in data, else the window times
+    # try:
+    #   start = timestamps[0]
+    #   end = timestamps[-1]
+    # except:
+    start = window.start.to_utc_datetime().strftime(DT_FORMAT)
+    end = window.end.to_utc_datetime().strftime(DT_FORMAT)
+    
+    # create new (center_freq,(channel_avg,data_start,data_end)) tuple
+    key_value = (element[0],(channel_avg,start,end))
 
     logging.info(">>>>> ChannelAmpAvgFn(): Result -> {}".format(key_value))
-    try:
-      logging.info(">>>>> ChannelAmpAvgFn(): Time 1: {0}, Time 2: {1}".format(timestamps[0],timestamps[-1]))
-    except:
-      pass
     yield key_value
 
 class ChannelCongestionFn(beam.DoFn):
@@ -475,16 +452,11 @@ class ChannelCongestionFn(beam.DoFn):
       below and returns the channel average PSD in format shown below.
 
       Input Format:  (center_freq,[(ev_timestamp1,ev1),...,(ev_timestampN,evN)])
-      Output Format: (center_freq,channel_avg,(window_start,window_end))
+      Output Format: (center_freq,(channel_avg,data_start,data_end))
   """
   # main process
   def process(self,element,window=beam.DoFn.WindowParam):
-    # logging.debug("\nChannelCongestionFn(): Data dump -> {}".format(element))
-    # logging.debug("\nChannelCongestionFn(): Threshold -> {}".format(self.threshold))
-    
-    win_start = window.start.to_utc_datetime().strftime(DT_FORMAT)
-    win_end = window.end.to_utc_datetime().strftime(DT_FORMAT)
-    
+        
     try:
       events = element[1]
     except Exception as e:
@@ -499,36 +471,38 @@ class ChannelCongestionFn(beam.DoFn):
       counts.append(event[1]) 
       timestamps.append(event[0])
     
-    # create new (center_freq,channel_avg,(window_start,window_end)) tuple
-    key_value = (element[0],(sum(counts),win_start,win_end))
+    # set start/end timestamps provided in data, else the window times
+    # try:
+    #   start = timestamps[0]
+    #   end = timestamps[-1]
+    # except:
+    start = window.start.to_utc_datetime().strftime(DT_FORMAT)
+    end = window.end.to_utc_datetime().strftime(DT_FORMAT)
+
+    # create new (center_freq,(channel_avg,data_start,data_end)) tuple
+    key_value = (element[0],(sum(counts),start,end))
 
     logging.info(">>>>> ChannelCongestionFn(): Result -> {}".format(key_value))
-    try:
-      logging.info(">>>>> ChannelCongestionFn(): Time 1: {0}, Time 2: {1}".format(timestamps[0],timestamps[-1]))
-    except:
-      pass
     yield key_value
 
-class FormatOutputFn(beam.DoFn):
+class FormatPubsubOutFn(beam.DoFn):
   """ Formats output for Google PubSub
       Input Format:   
-      {'chan_congestion': (center_freq,channel_cong,(window_start,window_end)),\n
-        'chan_average': (center_freq,channel_avg,(window_start,window_end))}\n
+      (center_freq, {'congestion': [(channel_cong,start_tim,end_time)],\n
+        'average': [(channel_avg,start_time,end_time)]})\n
       
-      Output Format:  str(data).encode("utf-8")
+      Output Format:  [center_freq: {'congestion': [(channel_cong,start_tim,end_time)],\n
+        'average': [(channel_avg,start_time,end_time)]}]
 
   """
   # main process
   def process(self,element):#,window=beam.DoFn.WindowParam):
+    # logging.debug(">>>>> FormatPubsubOutFn(): Element -> {}".format(element))
+    jsonstr = "{{\'{cfreq}\': {data}}}".format(cfreq = element[0],data=element[1])
+    jsonstr = jsonstr.replace("'", "\"")
+    logging.info(">>>>> FormatPubsubOutFn(): Dictionary -> {}".format(jsonstr))
 
-    #logging.info(">>>>> FormatOutputFn(): Result -> {}".format(str(element).encode("utf-8")))
-    logging.info(">>>>> FormatOutputFn(): Congestion -> {}".format(element))
-    # formatApply = "AVG({}), {}, {}, {}"
-    # formattedOutput = formatApply.format(rawOutput[0],rawOutput[1],start,end)
-  
-    # logging.info('FormatOutputFn() {}\n'.format(formattedOutput))
-
-    yield element #str(element).encode("utf-8")
+    return [jsonstr]
 
     # Transform:   
 class DebugOutputFn(beam.DoFn):
@@ -571,12 +545,13 @@ class SignalDetector(beam.PTransform):
 
     # return tuple with frequency PSD values as data            
     freq = signal | 'CreateTupleFreq' >> beam.ParDo(CreateFreqTupleFn())  # -> (center_freq,(localdatetime,data))
+    debug1 = freq | 'DebugOutput' >> beam.ParDo(DebugOutputFn())
 
     # return tuple with event count values as data
     count = (signal | 'PeakMarker' >> beam.Map(peakMarker)#beam.Map(lambda peak: (peak[0],1))
                     | 'CreateTupleCount' >> beam.ParDo(CreateFreqTupleFn()))
 
-    return [freq,count]
+    return count
             
 
 # END CUSTOM PTRANSFORMS
