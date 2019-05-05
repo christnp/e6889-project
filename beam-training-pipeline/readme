@@ -1,0 +1,4 @@
+Non-streaming beam pipleine that reads 2 weeks (14 Apr 2019 - 29 Apr 2019( of saved PubSub data 
+from 3 different sources (twitter, weather, traffic cam)and outputs a textfile containing 
+1 merged tuple for each 10 minute epoch to enable the offline creation of the k-medoid clustering model
+for use in the streaming pipeline 
