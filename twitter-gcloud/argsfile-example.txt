@@ -1,0 +1,8 @@
+--runner
+DirectRunner
+--temp_location
+gs://e6889/temp
+--staging_location
+gs://e6889/staging
+--region
+us-west1

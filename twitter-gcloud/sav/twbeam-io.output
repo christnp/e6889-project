@@ -1,0 +1,737 @@
+$ twbeam.py @args.txt
+INFO:twbeam:init_runtime: 08-May-2019 07:46:21.853 PDT-0700
+INFO:twbeam:init_runtime: project:e6889-236006, input_topic_name:twitter-stream, input_sub_name:twitter-stream
+INFO:twbeam:init_runtime: runner:DirectRunner, streaming:True, job_name:None, save_main_session:True
+INFO:twbeam:init_runtime: temp_location:gs://e6889/temp
+INFO:twbeam:init_runtime: staging_location:gs://e6889/staging
+INFO:twbeam:_main: Pub/Sub input topic: projects/e6889-236006/topics/twitter-stream
+INFO:twbeam:_main: Pub/Sub input subscription: projects/e6889-236006/subscriptions/twitter-stream
+INFO:twbeam:directrunner_pipeline: Starting
+INFO:direct_runner:run_pipeline: Running pipeline with DirectRunner.
+INFO:e6889_project:on_connect: connected to Twitter endpoint
+INFO:e6889_project:on_status: **Status update (#1) published**
+INFO:e6889_project:on_status:  e6889_id: 1, created_at: 2019-05-08 14:46:20, timestamp_ms: 1557326780029
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: @elleinthecity Bring it. I will mud wrestle you to keep that pin. (Wait, which one did you get? 😁)
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326780
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'25821',
+ u'author_friends_count': u'2903',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'15495117',
+ u'author_location': u"u'Brooklyn'",
+ u'author_statuses_count': u'102156',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:20',
+ u'e6889_id': u'1',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136253240496129',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for Android',
+ u'timestamp_ms': u'1557326780029',
+ u'user_mentions': u"[{u'id': 8393112, u'indices': [0, 14], u'id_str': u'8393112', u'screen_name': u'elleinthecity', u'name': u'Ellen Gerstein'}]"}
+INFO:twbeam:process:  Message text: @elleinthecity Bring it. I will mud wrestle you to keep that pin. (Wait, which one did you get? 😁)
+INFO:twbeam:process: Pipeline output pub msg: data: @elleinthecity Bring it. I will mud wrestle you to keep that pin. (Wait, which one did you get? 😁)
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'25821',
+ u'author_friends_count': u'2903',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'15495117',
+ u'author_location': u"u'Brooklyn'",
+ u'author_statuses_count': u'102156',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:20',
+ u'e6889_id': u'1',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136253240496129',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for Android',
+ u'timestamp_ms': u'1557326780029',
+ u'user_mentions': u"[{u'id': 8393112, u'indices': [0, 14], u'id_str': u'8393112', u'screen_name': u'elleinthecity', u'name': u'Ellen Gerstein'}]"}
+INFO:e6889_project:on_status: **Status update (#2) published**
+INFO:e6889_project:on_status:  e6889_id: 2, created_at: 2019-05-08 14:46:21, timestamp_ms: 1557326781561
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: Try posting the entire video instead of this clip #BlueLivesMatter
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326781
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'2681',
+ u'author_friends_count': u'325',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'161948948',
+ u'author_location': u"u'New York'",
+ u'author_statuses_count': u'79057',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:21',
+ u'e6889_id': u'2',
+ u'hashtags': u"[{u'indices': [50, 66], u'text': u'BlueLivesMatter'}]",
+ u'id_str': u'1126136259666173954',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for iPhone',
+ u'timestamp_ms': u'1557326781561',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process:  Message text: Try posting the entire video instead of this clip #BlueLivesMatter
+INFO:twbeam:process: Pipeline output pub msg: data: Try posting the entire video instead of this clip #BlueLivesMatter
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'2681',
+ u'author_friends_count': u'325',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'161948948',
+ u'author_location': u"u'New York'",
+ u'author_statuses_count': u'79057',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:21',
+ u'e6889_id': u'2',
+ u'hashtags': u"[{u'indices': [50, 66], u'text': u'BlueLivesMatter'}]",
+ u'id_str': u'1126136259666173954',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for iPhone',
+ u'timestamp_ms': u'1557326781561',
+ u'user_mentions': u'[]'}
+INFO:e6889_project:on_status: **Status update (#3) published**
+INFO:e6889_project:on_status:  e6889_id: 3, created_at: 2019-05-08 14:46:26, timestamp_ms: 1557326786483
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: @DJAnonymousDC Wait.... please explain? I know my spirit needs this but i don’t fully grasp what you mean
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326786
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'1375',
+ u'author_friends_count': u'1328',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'25982150',
+ u'author_location': u"u'home'",
+ u'author_statuses_count': u'118237',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:26',
+ u'e6889_id': u'3',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136280310517766',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for iPhone',
+ u'timestamp_ms': u'1557326786483',
+ u'user_mentions': u"[{u'id': 21590617, u'indices': [0, 14], u'id_str': u'21590617', u'screen_name': u'DJAnonymousDC', u'name': u'DJ ANONYMOUS'}]"}
+INFO:twbeam:process:  Message text: @DJAnonymousDC Wait.... please explain? I know my spirit needs this but i don’t fully grasp what you mean
+INFO:twbeam:process: Pipeline output pub msg: data: @DJAnonymousDC Wait.... please explain? I know my spirit needs this but i don’t fully grasp what you mean
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'1375',
+ u'author_friends_count': u'1328',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'25982150',
+ u'author_location': u"u'home'",
+ u'author_statuses_count': u'118237',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:26',
+ u'e6889_id': u'3',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136280310517766',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for iPhone',
+ u'timestamp_ms': u'1557326786483',
+ u'user_mentions': u"[{u'id': 21590617, u'indices': [0, 14], u'id_str': u'21590617', u'screen_name': u'DJAnonymousDC', u'name': u'DJ ANONYMOUS'}]"}
+INFO:e6889_project:on_status: **Status update (#4) published**
+INFO:e6889_project:on_status:  e6889_id: 4, created_at: 2019-05-08 14:46:27, timestamp_ms: 1557326787264
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: https://t.co/wVsI1fhBZq
+INFO:e6889_project:on_status: **Status update (#5) published**
+INFO:e6889_project:on_status:  e6889_id: 5, created_at: 2019-05-08 14:46:27, timestamp_ms: 1557326787925
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: Updated: Construction on #M14DBus Both directions from Avenue D and E 7th Street to Avenue D and E 9th Street https://t.co/ymaHrHJHnZ
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326787
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'7435',
+ u'author_friends_count': u'6830',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'987155559911538688',
+ u'author_location': u"u'New York'",
+ u'author_statuses_count': u'236',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:27',
+ u'e6889_id': u'4',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136283586277379',
+ u'lang': u'und',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for iPhone',
+ u'timestamp_ms': u'1557326787264',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process:  Message text: https://t.co/wVsI1fhBZq
+INFO:twbeam:process: Pipeline output pub msg: data: https://t.co/wVsI1fhBZq
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'7435',
+ u'author_friends_count': u'6830',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'987155559911538688',
+ u'author_location': u"u'New York'",
+ u'author_statuses_count': u'236',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:27',
+ u'e6889_id': u'4',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136283586277379',
+ u'lang': u'und',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for iPhone',
+ u'timestamp_ms': u'1557326787264',
+ u'user_mentions': u'[]'}
+INFO:e6889_project:on_status: **Status update (#6) published**
+INFO:e6889_project:on_status:  e6889_id: 6, created_at: 2019-05-08 14:46:28, timestamp_ms: 1557326788269
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: If you're looking for work in #NewYork, NY, check out this job: https://t.co/OZVCMklu03 #Purchasing
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326787
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'2137',
+ u'author_friends_count': u'200',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'50706690',
+ u'author_location': u"u'New York State'",
+ u'author_statuses_count': u'3514944',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.97647, 40.723106]}",
+ u'created_at': u'2019-05-08 14:46:27',
+ u'e6889_id': u'5',
+ u'hashtags': u"[{u'indices': [25, 33], u'text': u'M14DBus'}]",
+ u'id_str': u'1126136286358724609',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'511NY-Tweets',
+ u'timestamp_ms': u'1557326787925',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process:  Message text: Updated: Construction on #M14DBus Both directions from Avenue D and E 7th Street to Avenue D and E 9th Street https://t.co/ymaHrHJHnZ
+INFO:twbeam:process: Pipeline output pub msg: data: Updated: Construction on #M14DBus Both directions from Avenue D and E 7th Street to Avenue D and E 9th Street https://t.co/ymaHrHJHnZ
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'2137',
+ u'author_friends_count': u'200',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'50706690',
+ u'author_location': u"u'New York State'",
+ u'author_statuses_count': u'3514944',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.97647, 40.723106]}",
+ u'created_at': u'2019-05-08 14:46:27',
+ u'e6889_id': u'5',
+ u'hashtags': u"[{u'indices': [25, 33], u'text': u'M14DBus'}]",
+ u'id_str': u'1126136286358724609',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'511NY-Tweets',
+ u'timestamp_ms': u'1557326787925',
+ u'user_mentions': u'[]'}
+INFO:e6889_project:on_status: **Status update (#7) published**
+INFO:e6889_project:on_status:  e6889_id: 7, created_at: 2019-05-08 14:46:29, timestamp_ms: 1557326789243
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: Updated: Construction on #M14DBus Both directions from Avenue D and E 7th Street to Avenue D and E 9th Street https://t.co/pt2V3JfAZh
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326788
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'81',
+ u'author_friends_count': u'70',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'63044448',
+ u'author_location': u"u'Northern NJ'",
+ u'author_statuses_count': u'215',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.9932872, 40.7602619]}",
+ u'created_at': u'2019-05-08 14:46:28',
+ u'e6889_id': u'6',
+ u'hashtags': u"[{u'indices': [30, 38], u'text': u'NewYork'}, {u'indices': [88, 99], u'text': u'Purchasing'}]",
+ u'id_str': u'1126136287801380865',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'CareerArc 2.0',
+ u'timestamp_ms': u'1557326788269',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process:  Message text: If you're looking for work in #NewYork, NY, check out this job: https://t.co/OZVCMklu03 #Purchasing
+INFO:twbeam:process: Pipeline output pub msg: data: If you're looking for work in #NewYork, NY, check out this job: https://t.co/OZVCMklu03 #Purchasing
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'81',
+ u'author_friends_count': u'70',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'63044448',
+ u'author_location': u"u'Northern NJ'",
+ u'author_statuses_count': u'215',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.9932872, 40.7602619]}",
+ u'created_at': u'2019-05-08 14:46:28',
+ u'e6889_id': u'6',
+ u'hashtags': u"[{u'indices': [30, 38], u'text': u'NewYork'}, {u'indices': [88, 99], u'text': u'Purchasing'}]",
+ u'id_str': u'1126136287801380865',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'CareerArc 2.0',
+ u'timestamp_ms': u'1557326788269',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326789
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'2313',
+ u'author_friends_count': u'4',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'52272942',
+ u'author_location': u"u'New York City'",
+ u'author_statuses_count': u'1347842',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.97647, 40.723106]}",
+ u'created_at': u'2019-05-08 14:46:29',
+ u'e6889_id': u'7',
+ u'hashtags': u"[{u'indices': [25, 33], u'text': u'M14DBus'}]",
+ u'id_str': u'1126136291886870528',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'NYRegions',
+ u'timestamp_ms': u'1557326789243',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process:  Message text: Updated: Construction on #M14DBus Both directions from Avenue D and E 7th Street to Avenue D and E 9th Street https://t.co/pt2V3JfAZh
+INFO:twbeam:process: Pipeline output pub msg: data: Updated: Construction on #M14DBus Both directions from Avenue D and E 7th Street to Avenue D and E 9th Street https://t.co/pt2V3JfAZh
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'2313',
+ u'author_friends_count': u'4',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'52272942',
+ u'author_location': u"u'New York City'",
+ u'author_statuses_count': u'1347842',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.97647, 40.723106]}",
+ u'created_at': u'2019-05-08 14:46:29',
+ u'e6889_id': u'7',
+ u'hashtags': u"[{u'indices': [25, 33], u'text': u'M14DBus'}]",
+ u'id_str': u'1126136291886870528',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'NYRegions',
+ u'timestamp_ms': u'1557326789243',
+ u'user_mentions': u'[]'}
+INFO:e6889_project:on_status: **Status update (#8) published**
+INFO:e6889_project:on_status:  e6889_id: 8, created_at: 2019-05-08 14:46:30, timestamp_ms: 1557326790002
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: That’s the most irritating thing about Comey to you?
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326790
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'339',
+ u'author_friends_count': u'1444',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'72198072',
+ u'author_location': u"u'Brooklyn, NY'",
+ u'author_statuses_count': u'14299',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-74.00929871, 40.71551696]}",
+ u'created_at': u'2019-05-08 14:46:30',
+ u'e6889_id': u'8',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136295070285824',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Tweetbot for i\u039fS',
+ u'timestamp_ms': u'1557326790002',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process:  Message text: That’s the most irritating thing about Comey to you?
+INFO:twbeam:process: Pipeline output pub msg: data: That’s the most irritating thing about Comey to you?
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'339',
+ u'author_friends_count': u'1444',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'72198072',
+ u'author_location': u"u'Brooklyn, NY'",
+ u'author_statuses_count': u'14299',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-74.00929871, 40.71551696]}",
+ u'created_at': u'2019-05-08 14:46:30',
+ u'e6889_id': u'8',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136295070285824',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Tweetbot for i\u039fS',
+ u'timestamp_ms': u'1557326790002',
+ u'user_mentions': u'[]'}
+INFO:e6889_project:on_status: **Status update (#9) published**
+INFO:e6889_project:on_status:  e6889_id: 9, created_at: 2019-05-08 14:46:35, timestamp_ms: 1557326795894
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: 🤯
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326795
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'1803',
+ u'author_friends_count': u'4985',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'806537608159514624',
+ u'author_location': u"u'NoLIta, Manhattan'",
+ u'author_statuses_count': u'61455',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:35',
+ u'e6889_id': u'9',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136319783133186',
+ u'lang': u'und',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for iPhone',
+ u'timestamp_ms': u'1557326795894',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process:  Message text: 🤯
+INFO:twbeam:process: Pipeline output pub msg: data: 🤯
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'1803',
+ u'author_friends_count': u'4985',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'806537608159514624',
+ u'author_location': u"u'NoLIta, Manhattan'",
+ u'author_statuses_count': u'61455',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:35',
+ u'e6889_id': u'9',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136319783133186',
+ u'lang': u'und',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for iPhone',
+ u'timestamp_ms': u'1557326795894',
+ u'user_mentions': u'[]'}
+INFO:e6889_project:on_status: **Status update (#10) published**
+INFO:e6889_project:on_status:  e6889_id: 10, created_at: 2019-05-08 14:46:42, timestamp_ms: 1557326802572
+INFO:e6889_project:on_status:  place_full_name: New Jersey, USA, place_country_code: US, place_type: u'admin', place_id_str: 65b4760a2b411e11
+INFO:e6889_project:on_status:  text: @realDonaldTrump @kilmeade @foxandfriends To keep the Deep State going &amp; thought It would make you lose!
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326802
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'3855',
+ u'author_friends_count': u'4884',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'41834413',
+ u'author_location': u"u'Little Ferry, NJ'",
+ u'author_statuses_count': u'10498',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:42',
+ u'e6889_id': u'10',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136347792687104',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-75.563587, 38.788657], [-75.563587, 41.357424], [-73.88506, 41.357424], [-73.88506, 38.788657]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'New Jersey, USA',
+ u'place_id_str': u'65b4760a2b411e11',
+ u'place_type': u"u'admin'",
+ u'source': u'Twitter Web Client',
+ u'timestamp_ms': u'1557326802572',
+ u'user_mentions': u"[{u'id': 25073877, u'indices': [0, 16], u'id_str': u'25073877', u'screen_name': u'realDonaldTrump', u'name': u'Donald J. Trump'}, {u'id': 43919633, u'indices': [17, 26], u'id_str': u'43919633', u'screen_name': u'kilmeade', u'name': u'Brian Kilmeade'}, {u'id': 15513604, u'indices': [27, 41], u'id_str': u'15513604', u'screen_name': u'foxandfriends', u'name': u'FOX & friends'}]"}
+INFO:twbeam:process:  Message text: @realDonaldTrump @kilmeade @foxandfriends To keep the Deep State going &amp; thought It would make you lose!
+INFO:twbeam:process: Pipeline output pub msg: data: @realDonaldTrump @kilmeade @foxandfriends To keep the Deep State going &amp; thought It would make you lose!
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'3855',
+ u'author_friends_count': u'4884',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'41834413',
+ u'author_location': u"u'Little Ferry, NJ'",
+ u'author_statuses_count': u'10498',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:42',
+ u'e6889_id': u'10',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136347792687104',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-75.563587, 38.788657], [-75.563587, 41.357424], [-73.88506, 41.357424], [-73.88506, 38.788657]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'New Jersey, USA',
+ u'place_id_str': u'65b4760a2b411e11',
+ u'place_type': u"u'admin'",
+ u'source': u'Twitter Web Client',
+ u'timestamp_ms': u'1557326802572',
+ u'user_mentions': u"[{u'id': 25073877, u'indices': [0, 16], u'id_str': u'25073877', u'screen_name': u'realDonaldTrump', u'name': u'Donald J. Trump'}, {u'id': 43919633, u'indices': [17, 26], u'id_str': u'43919633', u'screen_name': u'kilmeade', u'name': u'Brian Kilmeade'}, {u'id': 15513604, u'indices': [27, 41], u'id_str': u'15513604', u'screen_name': u'foxandfriends', u'name': u'FOX & friends'}]"}
+INFO:e6889_project:on_status: **Status update (#11) published**
+INFO:e6889_project:on_status:  e6889_id: 11, created_at: 2019-05-08 14:46:43, timestamp_ms: 1557326803639
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: New trailer over on our willa_bsb page! Nathan (as usual) has crafted an amazing trailer. So lucky to be around friends that inspire me every day. Can’t wait for y’all to see this show. 
+
+• willa_bsb • @nathan_p_s… https://t.co/AUuqVoyS36
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326803
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'124',
+ u'author_friends_count': u'234',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'3118070196',
+ u'author_location': u"u'Brooklyn, NY'",
+ u'author_statuses_count': u'1604',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.990531, 40.767603]}",
+ u'created_at': u'2019-05-08 14:46:43',
+ u'e6889_id': u'11',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136352267997184',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Instagram',
+ u'timestamp_ms': u'1557326803639',
+ u'user_mentions': u"[{u'id': 727405820, u'indices': [202, 213], u'id_str': u'727405820', u'screen_name': u'nathan_p_s', u'name': u'Nathan Skethway'}]"}
+INFO:twbeam:process:  Message text: New trailer over on our willa_bsb page! Nathan (as usual) has crafted an amazing trailer. So lucky to be around friends that inspire me every day. Can’t wait for y’all to see this show. 
+
+• willa_bsb • @nathan_p_s… https://t.co/AUuqVoyS36
+INFO:twbeam:process: Pipeline output pub msg: data: New trailer over on our willa_bsb page! Nathan (as usual) has crafted an amazing trailer. So lucky to be around friends that inspire me every day. Can’t wait for y’all to see this show. 
+
+• willa_bsb • @nathan_p_s… https://t.co/AUuqVoyS36
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'124',
+ u'author_friends_count': u'234',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'3118070196',
+ u'author_location': u"u'Brooklyn, NY'",
+ u'author_statuses_count': u'1604',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.990531, 40.767603]}",
+ u'created_at': u'2019-05-08 14:46:43',
+ u'e6889_id': u'11',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136352267997184',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Instagram',
+ u'timestamp_ms': u'1557326803639',
+ u'user_mentions': u"[{u'id': 727405820, u'indices': [202, 213], u'id_str': u'727405820', u'screen_name': u'nathan_p_s', u'name': u'Nathan Skethway'}]"}
+INFO:e6889_project:on_status: **Status update (#12) published**
+INFO:e6889_project:on_status:  e6889_id: 12, created_at: 2019-05-08 14:46:44, timestamp_ms: 1557326804435
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: Tonight...
+#thedaughterstale @ Barnes &amp; Noble https://t.co/48GMhYTxzW
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326804
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'137382',
+ u'author_friends_count': u'350',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'25155337',
+ u'author_location': u"u'New York'",
+ u'author_statuses_count': u'40344',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.95537, 40.77926]}",
+ u'created_at': u'2019-05-08 14:46:44',
+ u'e6889_id': u'12',
+ u'hashtags': u"[{u'indices': [11, 28], u'text': u'thedaughterstale'}]",
+ u'id_str': u'1126136355606548480',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Instagram',
+ u'timestamp_ms': u'1557326804435',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process:  Message text: Tonight...
+#thedaughterstale @ Barnes &amp; Noble https://t.co/48GMhYTxzW
+INFO:e6889_project:on_status: **Status update (#13) published**
+INFO:e6889_project:on_status:  e6889_id: 13, created_at: 2019-05-08 14:46:45, timestamp_ms: 1557326805328
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: @justbalbi @MTA This is American exceptionalism at its finest. Being frozen to death while it's still chilly 🥶 https://t.co/Y4mISP9PoN
+INFO:twbeam:process: Pipeline output pub msg: data: Tonight...
+#thedaughterstale @ Barnes &amp; Noble https://t.co/48GMhYTxzW
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'137382',
+ u'author_friends_count': u'350',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'25155337',
+ u'author_location': u"u'New York'",
+ u'author_statuses_count': u'40344',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.95537, 40.77926]}",
+ u'created_at': u'2019-05-08 14:46:44',
+ u'e6889_id': u'12',
+ u'hashtags': u"[{u'indices': [11, 28], u'text': u'thedaughterstale'}]",
+ u'id_str': u'1126136355606548480',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Instagram',
+ u'timestamp_ms': u'1557326804435',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326805
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'956',
+ u'author_friends_count': u'875',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'65156634',
+ u'author_location': u"u'New York City '",
+ u'author_statuses_count': u'39512',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:45',
+ u'e6889_id': u'13',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136359352139777',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'Estados Unidos',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for iPhone',
+ u'timestamp_ms': u'1557326805328',
+ u'user_mentions': u"[{u'id': 102843428, u'indices': [0, 10], u'id_str': u'102843428', u'screen_name': u'justbalbi', u'name': u'Rafael Balbi'}, {u'id': 94129050, u'indices': [11, 15], u'id_str': u'94129050', u'screen_name': u'MTA', u'name': u'MTA'}]"}
+INFO:twbeam:process:  Message text: @justbalbi @MTA This is American exceptionalism at its finest. Being frozen to death while it's still chilly 🥶 https://t.co/Y4mISP9PoN
+INFO:twbeam:process: Pipeline output pub msg: data: @justbalbi @MTA This is American exceptionalism at its finest. Being frozen to death while it's still chilly 🥶 https://t.co/Y4mISP9PoN
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'956',
+ u'author_friends_count': u'875',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'65156634',
+ u'author_location': u"u'New York City '",
+ u'author_statuses_count': u'39512',
+ u'coordinates': u'None',
+ u'created_at': u'2019-05-08 14:46:45',
+ u'e6889_id': u'13',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136359352139777',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'Estados Unidos',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Twitter for iPhone',
+ u'timestamp_ms': u'1557326805328',
+ u'user_mentions': u"[{u'id': 102843428, u'indices': [0, 10], u'id_str': u'102843428', u'screen_name': u'justbalbi', u'name': u'Rafael Balbi'}, {u'id': 94129050, u'indices': [11, 15], u'id_str': u'94129050', u'screen_name': u'MTA', u'name': u'MTA'}]"}
+INFO:e6889_project:on_status: **Status update (#14) published**
+INFO:e6889_project:on_status:  e6889_id: 14, created_at: 2019-05-08 14:46:46, timestamp_ms: 1557326806739
+INFO:e6889_project:on_status:  place_full_name: Manhattan, NY, place_country_code: US, place_type: u'city', place_id_str: 01a9a39529b27f36
+INFO:e6889_project:on_status:  text: Our Tribeca family is already feeling sad to part off into our own corners of the world. It's been a wild ride and so much bonding comes from that. Here's the lovely and so… https://t.co/C0hcvq8tAr
+INFO:twbeam:process: Pipeline input message: Beam timestamp: 1557326806
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'829',
+ u'author_friends_count': u'791',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'32635243',
+ u'author_location': u"u'NYC'",
+ u'author_statuses_count': u'12075',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.99316, 40.74127]}",
+ u'created_at': u'2019-05-08 14:46:46',
+ u'e6889_id': u'14',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136365270355968',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Instagram',
+ u'timestamp_ms': u'1557326806739',
+ u'user_mentions': u'[]'}
+INFO:twbeam:process:  Message text: Our Tribeca family is already feeling sad to part off into our own corners of the world. It's been a wild ride and so much bonding comes from that. Here's the lovely and so… https://t.co/C0hcvq8tAr
+INFO:twbeam:process: Pipeline output pub msg: data: Our Tribeca family is already feeling sad to part off into our own corners of the world. It's been a wild ride and so much bonding comes from that. Here's the lovely and so… https://t.co/C0hcvq8tAr
+INFO:twbeam:process:  Message attributes: {u'author_followers_count': u'829',
+ u'author_friends_count': u'791',
+ u'author_geo_enabled': u'True',
+ u'author_id_str': u'32635243',
+ u'author_location': u"u'NYC'",
+ u'author_statuses_count': u'12075',
+ u'coordinates': u"{u'type': u'Point', u'coordinates': [-73.99316, 40.74127]}",
+ u'created_at': u'2019-05-08 14:46:46',
+ u'e6889_id': u'14',
+ u'hashtags': u'[]',
+ u'id_str': u'1126136365270355968',
+ u'lang': u'en',
+ u'place_bounding_box_coordinates': u'[[[-74.026675, 40.683935], [-74.026675, 40.877483], [-73.910408, 40.877483], [-73.910408, 40.683935]]]',
+ u'place_bounding_box_type': u'Polygon',
+ u'place_country': u'United States',
+ u'place_country_code': u'US',
+ u'place_full_name': u'Manhattan, NY',
+ u'place_id_str': u'01a9a39529b27f36',
+ u'place_type': u"u'city'",
+ u'source': u'Instagram',
+ u'timestamp_ms': u'1557326806739',
+ u'user_mentions': u'[]'}
+^CINFO:twbeam:_main: 
+Got ctrl-c. Shutting down
+INFO:twbeam:shutdown: shutdown complete
