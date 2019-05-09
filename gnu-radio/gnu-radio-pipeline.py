@@ -339,7 +339,8 @@ class ParseAttrDataFn(beam.DoFn):
         "timestamp:"      "YYYY-MM-DDTHH:MM:SS.SSSZ" // RFC 3339 format, UTC 
         "center_freq":    "VALUE_IN_HZ" // float
         "sample_rate":    "VALUE_IN_SAMPLE_PER_SEC" // float
-      }"""
+      }
+    }"""
   # main process
   def process(self,element):
     # logging.debug('ParseAttrDataFn(): Data dump ->  {}\n'.format(element)) 

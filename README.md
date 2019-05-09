@@ -24,6 +24,8 @@ This section provides important information for the SDR applicaiton.
 2. Make a "build" directory (cd build)
 3. execute the following to build the module and add to GNU Radio Companion (GRC):
     a. cmake ../
+       NOTE: if PyBOMBS was used to install GNU Radio, then: 
+       cmake -DCMAKE_INSTALL_PREFIX= ../ #  should be the configured PyBOMBS target
     b. make
     c. sudo make install
     d. sudo ldconfig

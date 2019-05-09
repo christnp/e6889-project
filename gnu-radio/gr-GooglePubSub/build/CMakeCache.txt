@@ -239,7 +239,7 @@ GNURADIO_RUNTIME_LIBRARIES_gnuradio-runtime:FILEPATH=/usr/lib/x86_64-linux-gnu/l
 GNURADIO_RUNTIME_LIBRARIES_log4cpp:FILEPATH=/usr/lib/x86_64-linux-gnu/liblog4cpp.so
 
 //The directory containing a CMake configuration file for Gnuradio.
-Gnuradio_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/gnuradio
+Gnuradio_DIR:PATH=/usr/local/lib/cmake/gnuradio
 
 //lib directory suffix
 LIB_SUFFIX:STRING=

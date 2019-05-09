@@ -110,7 +110,8 @@ def run():
         #  (center_freq, {'congestion': [(channel_cong,start_tim,end_time)],
         # 'average': [(channel_avg,start_time,end_time)]})
         current = message.data
-        print('Received message: {}'.format(current))
+        logging.debug('Received message: {}'.format(current)) # moved to end
+
         try:
             current_dict = ast.literal_eval(message.data)
             center_freq = current_dict.keys()[0]
@@ -134,8 +135,8 @@ def run():
                 cong_val = congestion[0][0]
                 cong_start = congestion[0][1]
                 cong_end = congestion[0][2]
-            print('Average: {}'.format(average))
-            print('Congestion: {}'.format(congestion))
+            logging.debug('Average: {}'.format(average))
+            logging.debug('Congestion: {}'.format(congestion))
         except Exception as e:
             print("Failed to get congestion values. Error: {}".format(e))
             pass
@@ -150,6 +151,14 @@ def run():
         # if csv is X bytes, close it and create new
         previous = current
         message.ack()
+
+        # print the message to the screen
+        print('\n{{\n \"{center_freq}\":\n  {{ \
+                \n  \"average\":     {average}, \
+                \n  \"congestion\":  {congestion}\n  }} \
+                \n}}\n'
+                .format(center_freq = center_freq, average = average,
+                        congestion=congestion ))
 
     future = subscriber.subscribe(subscription_name, callback)
     print('Listening for messages on {}.'.format(subscription_name))

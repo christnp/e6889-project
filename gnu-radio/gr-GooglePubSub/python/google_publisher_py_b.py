@@ -124,9 +124,18 @@ class google_publisher_py_b(gr.sync_block):
                     center_freq = str(self.c_freq),
                     sample_rate = str(self.s_rate))
 
-            logging.info("\n[{0} | {1}] Message #{2} published \'{3}\' = {4}".format(
-                            ts_nyc,ts_google,self.data_count,self.attribute,
-                            str(attr_data).encode("utf-8")))
+            # logging.info("\n[{0} | {1}] Message #{2} published \'{3}\' = {4}".format(
+            #                 ts_nyc,ts_google,self.data_count,self.attribute,
+            #                 str(attr_data).encode("utf-8")))
+
+            print('\n{{\n data: {data},\n attributes: \n {{ \
+                        \n  \"timestamp\":     \"{timestamp}\", \
+                        \n  \"localdatetime\": \"{dt}\", \
+                        \n  \"center_freq\":   \"{center_freq}\", \
+                        \n  \"sample_rate\":   \"{samp_rate}\"\n }} \
+                        \n}}\n'
+                        .format( data = attr_data, timestamp = ts_google,
+                        dt = ts_nyc,center_freq = self.c_freq, samp_rate = self.s_rate ))
          
             # increment global data message counter and reset timer
             self.data_count += 1
