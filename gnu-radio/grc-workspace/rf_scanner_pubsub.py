@@ -77,7 +77,7 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         # Blocks
         ##################################################
         self._center_freq_range = Range(850e6, 860e6, 0.0001e6, 854.2625e6, 200)
-        self._center_freq_win = RangeWidget(self._center_freq_range, self.set_center_freq, 'dunn_loring', "counter_slider", float)
+        self._center_freq_win = RangeWidget(self._center_freq_range, self.set_center_freq, 'fairfax_county', "counter_slider", float)
         self.top_grid_layout.addWidget(self._center_freq_win)
         self.rtlsdr_source_0 = osmosdr.source( args="numchan=" + str(1) + " " + '' )
         self.rtlsdr_source_0.set_sample_rate(samp_rate)
