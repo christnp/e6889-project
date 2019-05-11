@@ -85,11 +85,14 @@ while True:
 
     #nyc_localtime = time.strftime("%Y-%m-%d-%H-%M-%S", time.gmtime())
 
-
-    publisher.publish(topic, weather_summary.encode('utf-8'), localdatetime=nyc_datetime, time=time_attr,
+    print(weather_summary+":"+nyc_datetime)
+    
+    for i in range(0,60):
+        publisher.publish(topic, weather_summary.encode('utf-8'), localdatetime=nyc_datetime, time=time_attr,
                       summary=summary_attr,precip=precip_attr,temp=temp_attr,uv=uv_attr,wind=wind_attr)
+        time.sleep(10)
 
     #print(time_attr)
-    print(weather_summary+":"+nyc_datetime)
-    time.sleep(300)
+    #print(weather_summary+":"+nyc_datetime)
+    #time.sleep(300)
 
