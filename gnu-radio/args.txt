@@ -6,3 +6,5 @@ gs://e6889/temp
 gs://e6889/staging
 --runner
 DataflowRunner
+--region
+us-west1
