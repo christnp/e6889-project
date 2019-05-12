@@ -1,0 +1,2 @@
+Need to either create a single valid point within "class valid_point" line 68 
+or instert a combine function between lines 192 & 193 to feed "valid_point" a single point 
