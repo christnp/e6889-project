@@ -1,9 +1,9 @@
 --project
-e6889...
+elen-e6889
 --temp
-gs://e6889/temp
+gs://e6889-bucket/tmp/
 --stage
-gs://e6889/staging
+gs://e6889-bucket/stage/
 --runner
 DataflowRunner
 --region

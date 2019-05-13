@@ -17,6 +17,7 @@ if __name__ == '__main__':
             print "Warning: failed to XInitThreads()"
 
 from PyQt4 import Qt
+from gnuradio import analog
 from gnuradio import blocks
 from gnuradio import eng_notation
 from gnuradio import fft
@@ -29,10 +30,8 @@ from gnuradio.filter import firdes
 from gnuradio.qtgui import Range, RangeWidget
 from optparse import OptionParser
 import GooglePubSub
-import osmosdr
 import sip
 import sys
-import time
 from gnuradio import qtgui
 
 
@@ -71,27 +70,18 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         self.samp_rate = samp_rate = 2.0e6
         self.fft_size = fft_size = 1024
         self.cutoff = cutoff = (signal_bw/2)+750
-        self.center_freq = center_freq = 854.2625e6
+        self.center_freq = center_freq = 155.312e6
+        self.amplitude = amplitude = 0.001
 
         ##################################################
         # Blocks
         ##################################################
-        self._center_freq_range = Range(850e6, 860e6, 0.0001e6, 854.2625e6, 200)
-        self._center_freq_win = RangeWidget(self._center_freq_range, self.set_center_freq, 'fairfax_county', "counter_slider", float)
+        self._center_freq_range = Range(145.5e6, 165.5e6, .5e6, 155.312e6, 200)
+        self._center_freq_win = RangeWidget(self._center_freq_range, self.set_center_freq, 'tri-cities', "counter_slider", float)
         self.top_grid_layout.addWidget(self._center_freq_win)
-        self.rtlsdr_source_0 = osmosdr.source( args="numchan=" + str(1) + " " + '' )
-        self.rtlsdr_source_0.set_sample_rate(samp_rate)
-        self.rtlsdr_source_0.set_center_freq(center_freq, 0)
-        self.rtlsdr_source_0.set_freq_corr(0, 0)
-        self.rtlsdr_source_0.set_dc_offset_mode(0, 0)
-        self.rtlsdr_source_0.set_iq_balance_mode(2, 0)
-        self.rtlsdr_source_0.set_gain_mode(False, 0)
-        self.rtlsdr_source_0.set_gain(20, 0)
-        self.rtlsdr_source_0.set_if_gain(20, 0)
-        self.rtlsdr_source_0.set_bb_gain(20, 0)
-        self.rtlsdr_source_0.set_antenna('', 0)
-        self.rtlsdr_source_0.set_bandwidth(0, 0)
-
+        self._amplitude_range = Range(0.001, 0.01, 0.001, 0.001, 200)
+        self._amplitude_win = RangeWidget(self._amplitude_range, self.set_amplitude, 'SimAmplitude', "counter_slider", float)
+        self.top_grid_layout.addWidget(self._amplitude_win)
         self.qtgui_waterfall_sink_x_0_0 = qtgui.waterfall_sink_c(
         	1024, #size
         	firdes.WIN_BLACKMAN_hARRIS, #wintype
@@ -127,8 +117,8 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         self.qtgui_waterfall_sink_x_0_0.set_intensity_range(-140, 10)
 
         self._qtgui_waterfall_sink_x_0_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0_0.pyqwidget(), Qt.QWidget)
-        self.top_grid_layout.addWidget(self._qtgui_waterfall_sink_x_0_0_win, 2, 0, 1, 1)
-        for r in range(2, 3):
+        self.top_grid_layout.addWidget(self._qtgui_waterfall_sink_x_0_0_win, 3, 0, 1, 1)
+        for r in range(3, 4):
             self.top_grid_layout.setRowStretch(r, 1)
         for c in range(0, 1):
             self.top_grid_layout.setColumnStretch(c, 1)
@@ -167,8 +157,8 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         self.qtgui_waterfall_sink_x_0.set_intensity_range(-140, 10)
 
         self._qtgui_waterfall_sink_x_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0.pyqwidget(), Qt.QWidget)
-        self.top_grid_layout.addWidget(self._qtgui_waterfall_sink_x_0_win, 1, 0, 1, 1)
-        for r in range(1, 2):
+        self.top_grid_layout.addWidget(self._qtgui_waterfall_sink_x_0_win, 2, 0, 1, 1)
+        for r in range(2, 3):
             self.top_grid_layout.setRowStretch(r, 1)
         for c in range(0, 1):
             self.top_grid_layout.setColumnStretch(c, 1)
@@ -215,6 +205,7 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         self.blocks_stream_to_vector_0 = blocks.stream_to_vector(gr.sizeof_gr_complex*1, fft_size)
         self.blocks_nlog10_ff_0 = blocks.nlog10_ff(10, fft_size, 0)
         self.blocks_complex_to_mag_squared_0 = blocks.complex_to_mag_squared(fft_size)
+        self.analog_sig_source_x_0 = analog.sig_source_c(samp_rate, analog.GR_COS_WAVE, center_freq, amplitude, 0)
         self.GooglePubSub_google_publisher_py_b_0_0 = GooglePubSub.google_publisher_py_b('/home/christnp/Development/e6889/Google/ELEN-E6889-227a1ecc78b6.json','elen-e6889','gnuradio',2,center_freq,samp_rate,"max")
 
 
@@ -222,6 +213,8 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         ##################################################
         # Connections
         ##################################################
+        self.connect((self.analog_sig_source_x_0, 0), (self.low_pass_filter_0_0, 0))
+        self.connect((self.analog_sig_source_x_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
         self.connect((self.blocks_complex_to_mag_squared_0, 0), (self.blocks_nlog10_ff_0, 0))
         self.connect((self.blocks_nlog10_ff_0, 0), (self.blocks_vector_to_stream_0, 0))
         self.connect((self.blocks_nlog10_ff_0, 0), (self.qtgui_vector_sink_f_0, 0))
@@ -230,8 +223,6 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
         self.connect((self.fft_vxx_0, 0), (self.blocks_complex_to_mag_squared_0, 0))
         self.connect((self.low_pass_filter_0_0, 0), (self.blocks_stream_to_vector_0, 0))
         self.connect((self.low_pass_filter_0_0, 0), (self.qtgui_waterfall_sink_x_0_0, 0))
-        self.connect((self.rtlsdr_source_0, 0), (self.low_pass_filter_0_0, 0))
-        self.connect((self.rtlsdr_source_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
 
     def closeEvent(self, event):
         self.settings = Qt.QSettings("GNU Radio", "rf_scanner_pubsub")
@@ -257,11 +248,11 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-        self.rtlsdr_source_0.set_sample_rate(self.samp_rate)
         self.qtgui_waterfall_sink_x_0_0.set_frequency_range(self.center_freq, self.samp_rate)
         self.qtgui_waterfall_sink_x_0.set_frequency_range(self.center_freq, self.samp_rate)
         self.qtgui_vector_sink_f_0.set_x_axis((self.center_freq-self.samp_rate/2)/1.0e6, (self.samp_rate/self.fft_size)/1.0e6)
         self.low_pass_filter_0_0.set_taps(firdes.low_pass(1, self.samp_rate, self.cutoff, self.transition, firdes.WIN_HAMMING, 6.76))
+        self.analog_sig_source_x_0.set_sampling_freq(self.samp_rate)
 
     def get_fft_size(self):
         return self.fft_size
@@ -282,10 +273,17 @@ class rf_scanner_pubsub(gr.top_block, Qt.QWidget):
 
     def set_center_freq(self, center_freq):
         self.center_freq = center_freq
-        self.rtlsdr_source_0.set_center_freq(self.center_freq, 0)
         self.qtgui_waterfall_sink_x_0_0.set_frequency_range(self.center_freq, self.samp_rate)
         self.qtgui_waterfall_sink_x_0.set_frequency_range(self.center_freq, self.samp_rate)
         self.qtgui_vector_sink_f_0.set_x_axis((self.center_freq-self.samp_rate/2)/1.0e6, (self.samp_rate/self.fft_size)/1.0e6)
+        self.analog_sig_source_x_0.set_frequency(self.center_freq)
+
+    def get_amplitude(self):
+        return self.amplitude
+
+    def set_amplitude(self, amplitude):
+        self.amplitude = amplitude
+        self.analog_sig_source_x_0.set_amplitude(self.amplitude)
 
 
 def main(top_block_cls=rf_scanner_pubsub, options=None):
