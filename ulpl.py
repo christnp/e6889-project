@@ -505,30 +505,30 @@ def run(argv=None):
     #
     # BEGIN: GNU Radio nodes
     p = beam.Pipeline(options=pipeline_options)
-    data = (p | 'GetData' >>  beam.io.ReadFromPubSub(
+    data = (p | 'Read RF' >>  beam.io.ReadFromPubSub(
                 #topic=grtopic_path,
                 subscription=grsub_path,
                 with_attributes=True,
                 timestamp_attribute='timestamp')
-              | 'ParseData' >> beam.ParDo(ParseAttrDataFn()))#'RfTuple' >> beam.Map(lambda pubsub:
+              | 'RF Parse Data' >> beam.ParDo(ParseAttrDataFn()))#'RfTuple' >> beam.Map(lambda pubsub:
     # data -> { 'data':X, 'center_freq':X, 'sample_rate':X, 'localdatetime':X }
 
     # filters input based on threshold value (-threshold,-d)
-    signal1 = (data | 'SignalDetector' >> SignalDetector(threshold))
+    signal1 = (data | 'Signal Detector' >> SignalDetector(threshold))
     # debug1 = signal1[0] | 'DebugOutput' >> beam.ParDo(DebugOutputFn())
 
     # calculates congestion using detected signals (above threshold)
-    congestion = (signal1  | 'WindowCongestion' >> beam.WindowInto(
+    congestion = (signal1  | 'Congestion Window' >> beam.WindowInto(
                                 window.SlidingWindows(60,50)) # overlap by 10 seconds
-                           | 'GroupCongestion' >> beam.GroupByKey() # group by center_freq, then average
-                           | 'ChannelCongestion' >> beam.ParDo(ChannelCongestionFn()))
+                           | 'Congestion Group' >> beam.GroupByKey() # group by center_freq, then average
+                           | 'Channel Congestion' >> beam.ParDo(ChannelCongestionFn()))
     # congestion -> (center_freq,(channel_cong,data_start,data_end))
 
     # calculates the average channel PSD (in dBs)
-    average = (data | 'CreateTupleAverage' >> beam.ParDo(CreateFreqTupleFn()) # (center_freq,(localdatetime,data))
-                    | 'WindowAverage' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
-                    | 'GroupAverage' >> beam.GroupByKey() # group by center_freq, then average
-                    | 'ChannelAverage' >> beam.ParDo(ChannelAmpAvgFn()))
+    average = (data | 'Average Create Tuple' >> beam.ParDo(CreateFreqTupleFn()) # (center_freq,(localdatetime,data))
+                    | 'Average Window' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
+                    | 'Average Group' >> beam.GroupByKey() # group by center_freq, then average
+                    | 'Channel Average' >> beam.ParDo(ChannelAmpAvgFn()))
     # average -> (center_freq,(channel_avg,data_start,data_end))
 
     # group the results
@@ -536,7 +536,7 @@ def run(argv=None):
                       | 'GroupAll' >> beam.CoGroupByKey())
     # output -> (center_freq,{'congestion':[], 'average':[]})
 
-    pubsub = (output  | 'FormatPubSub' >> beam.ParDo(FormatPubsubOutFn())) # converts above to PubSub Output
+    pubsub = (output  | 'Format PubSub' >> beam.ParDo(FormatPubsubOutFn())) # converts above to PubSub Output
 
     # output to PubSub; requires subscriber
     pubsub | beam.io.WriteToPubSub(topic=bmtopic_path)
