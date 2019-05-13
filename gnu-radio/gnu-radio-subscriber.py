@@ -38,6 +38,8 @@ PROJECT = 'elen-e6889'
 TOPIC_IN = 'beam-top'
 SUBSCRIPTION = 'beam-sub'
 CSV_OUTPUT = 'beam_output_{}.csv'.format(datetime.now())
+ALDO_CRED = '/home/christnp/Development/e6889/Google/Aldo_key/ELENE6889-7a8999b5aa9f.json'
+TEST_CRED = '/home/christnp/Development/e6889/Google/sandbox/elene6889-sandbox-subscriber.json'
 
 def run():
     parser = argparse.ArgumentParser()
@@ -75,6 +77,9 @@ def run():
     project = args.project
     topic_in = args.topic_in
     subscription = args.subscription
+
+    # set the Google Credentials
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = TEST_CRED #ALDO_CRED
 
     subscriber = pubsub.SubscriberClient()
     topic_name = 'projects/{project_id}/topics/{topic}'.format(
