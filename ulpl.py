@@ -30,6 +30,7 @@ Assumptions:
         {
             data: 'VALUE'
             attributes: {
+                "timestamp":      "YYYY-MM-DDTHH:MM:SS.SSSSSSSSSZ" (RFC3339 UTC "Zulu" format)
                 "localdatetime":  "YYYY-MM-DD HH:MM:SS"
                 "center_freq":    "VALUE_IN_HZ"
                 "sample_rate":    "VALUE_IN_SAMPLE_PER_SEC"
