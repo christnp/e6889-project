@@ -1,8 +1,8 @@
 # e6889-project
 
 ## Beam Pipeline Resources:
-Make sure Apache Beam 2.11 is installed `pip install apache-beam`
-Make sure Apache Beam GCP is installed `pip install apache-beam[gcp]`
+Make sure Apache Beam 2.11 is installed `pip install apache-beam` <br />
+Make sure Apache Beam GCP is installed `pip install apache-beam[gcp]` <br />
 
 ## Google PubSub and Dataflow Resources:
 TBD
@@ -17,7 +17,7 @@ TBD
 TBD
 
 ## SDR Resources:
-This section provides important information for the SDR applicaiton.
+This section provides important information for the SDR application.
 
 ### GNU Raidio Setup (Linux)
 The GNU Radio source code and instructions are located in the gnu-radio directory.
