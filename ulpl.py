@@ -53,6 +53,8 @@ import pytz
 import argparse
 import datetime
 import logging
+import pandas
+import numpy
 
 import apache_beam as beam # pylint: disable=import-error
 from apache_beam import window # pylint: disable=import-error
@@ -71,6 +73,7 @@ from apache_beam.metrics.metric import Metrics # pylint: disable=import-error
 
 from google.cloud import pubsub_v1 # pylint: disable=import-error,no-name-in-module
 from google.api_core.exceptions import AlreadyExists, NotFound
+
 
 # GR definitions
 DT_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -206,7 +209,7 @@ class assign_cluster(beam.DoFn):
         test_point = numpy.array(element)
 
         # medoid points between 0 and 1
-        medoids = array(
+        medoids = numpy.array(
                 [[0.102, 0.2, 0.43, 0.0, 0.297, 0.124],
                 [0.248, 0.1, 0.346, 0.125, 0.173, 0.564],
                 [0.491, 0.6, 0.568, 0.375, 0.355, 0.589],
@@ -436,8 +439,10 @@ def run(argv=None):
 
 ###############################################################################
 # GOOGLE BIGQUERY CONFIG
+# NOTE: this is currently not used but is left for future use
 #
     # BigQuery table schema
+    # TODO: need to install apache_beam[gcp] for his to work (FIY: errors to not indicate this dependency)
     from apache_beam.io.gcp.internal.clients import bigquery  # pylint: disable=import-error,wrong-import-order, wrong-import-position
     table_schema = bigquery.TableSchema()
 
@@ -485,12 +490,9 @@ def run(argv=None):
 ###############################################################################
 # START BEAM PIPELINE
 #
-    # RB: add options from pipeline_args
     pipeline_options = PipelineOptions(pipeline_args)
-    #pipeline_options = PipelineOptions(pipeline_args)
     # use the requirements document to list Python packages required in the
     # pipeline
-    # NOTE: this didn't seem to resolve the datetime dependecy I saw
     #pipeline_options.view_as(SetupOptions).requirements_file = 'requirements.txt'
     pipeline_options.view_as(SetupOptions).save_main_session = True # global session to workers
     pipeline_options.view_as(GoogleCloudOptions).job_name = "e6889-project-{}".format(gc_timestamp())
@@ -502,47 +504,57 @@ def run(argv=None):
       pipeline_options.view_as(GoogleCloudOptions).staging_location = stage
 
     # Create pipeline and begin Beam processing
-    #
-    # BEGIN: GNU Radio nodes
     p = beam.Pipeline(options=pipeline_options)
-    data = (p | 'Read RF' >>  beam.io.ReadFromPubSub(
-                #topic=grtopic_path,
-                subscription=grsub_path,
-                with_attributes=True,
-                timestamp_attribute='timestamp')
-              | 'RF Parse Data' >> beam.ParDo(ParseAttrDataFn()))#'RfTuple' >> beam.Map(lambda pubsub:
-    # data -> { 'data':X, 'center_freq':X, 'sample_rate':X, 'localdatetime':X }
 
-    # filters input based on threshold value (-threshold,-d)
-    signal1 = (data | 'Signal Detector' >> SignalDetector(threshold))
-    # debug1 = signal1[0] | 'DebugOutput' >> beam.ParDo(DebugOutputFn())
+    #############################
+    # BEGIN: GNU Radio nodes  
+    # NOTE: this this executes the gnuradio_source as input pipeline.. use "grpl>>" to filter stackdriver logs
+    data = (p | 'GetData' >>  beam.io.ReadFromPubSub(
+                                  #   topic=grtopic_path,
+                                  subscription=grsub_path,
+                                  with_attributes=True,
+                                  timestamp_attribute='timestamp')
+                  | 'ParseData' >> beam.ParDo(ParseAttrDataFn()))#'RfTuple' >> beam.Map(lambda pubsub:
+    # Pcollection: data -> { 'data':X, 'center_freq':X, 'sample_rate':X, 'localdatetime':X }
+   
 
     # calculates congestion using detected signals (above threshold)
-    congestion = (signal1  | 'Congestion Window' >> beam.WindowInto(
-                                window.SlidingWindows(60,50)) # overlap by 10 seconds
-                           | 'Congestion Group' >> beam.GroupByKey() # group by center_freq, then average
-                           | 'Channel Congestion' >> beam.ParDo(ChannelCongestionFn()))
-    # congestion -> (center_freq,(channel_cong,data_start,data_end))
+    congestion = (data  | 'SignalDetector' >> SignalDetector(threshold) # filters input based on threshold value (-threshold,-d)
+                        | 'WindowCongestion' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
+                        | 'GroupCongestion' >> beam.GroupByKey() # group by center_freq, then count peaks
+                        | 'ChannelCongestion' >> beam.ParDo(ChannelCongestionFn()))
+    # Pcollection: congestion -> (center_freq,(channel_cong,data_start,data_end))
 
     # calculates the average channel PSD (in dBs)
-    average = (data | 'Average Create Tuple' >> beam.ParDo(CreateFreqTupleFn()) # (center_freq,(localdatetime,data))
-                    | 'Average Window' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
-                    | 'Average Group' >> beam.GroupByKey() # group by center_freq, then average
-                    | 'Channel Average' >> beam.ParDo(ChannelAmpAvgFn()))
-    # average -> (center_freq,(channel_avg,data_start,data_end))
+    average = (data | 'CreateTupleAverage' >> beam.ParDo(CreateFreqTupleFn()) # (center_freq,(localdatetime,data))
+                    | 'WindowAverage' >> beam.WindowInto(window.SlidingWindows(60,50)) # overlap by 10 seconds
+                    | 'GroupAverage' >> beam.GroupByKey() # group by center_freq, then average
+                    | 'ChannelAverage' >> beam.ParDo(ChannelAmpAvgFn()))
+    # Pcollection: average -> (center_freq,(channel_avg,data_start,data_end))
 
     # group the results
     output = ({'congestion':congestion, 'average':average}
                       | 'GroupAll' >> beam.CoGroupByKey())
-    # output -> (center_freq,{'congestion':[], 'average':[]})
+    # Pcollection: output -> (center_freq,{'congestion':[], 'average':[]})
 
+    #TODO: merge "output" pcollection with clustering algorithm
     pubsub = (output  | 'Format PubSub' >> beam.ParDo(FormatPubsubOutFn())) # converts above to PubSub Output
-
-    # output to PubSub; requires subscriber
     pubsub | beam.io.WriteToPubSub(topic=bmtopic_path)
 
-    # END: GNU Radio nodes
 
+    # https://stackoverflow.cogrtopic_pathm/questions/51621792/streaming-pipelines-with-bigquery-sinks-in-python
+    # Write data to BigQuery
+    # NOTE: this is currently not used but is left for future use
+    # payload | beam.io.WriteToBigQuery(
+    #   table_spec,
+    #   schema=table_schema,
+    #   write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+    #   create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)
+
+    # END: GNU Radio nodes
+    #############################
+
+    #############################
     # BEGIN: API-sources nodes
     #
     # get stream from traffic camera image source (corresponds to index [5] of medoids)
@@ -598,14 +610,8 @@ def run(argv=None):
                         | "Assign Cluster" >> beam.ParDo(assign_cluster())
                         | 'Log Point' >> beam.ParDo(
                                 lambda (a,c): logging.info("*** Observed Cluster =  %s",c)))
-
-    # https://stackoverflow.cogrtopic_pathm/questions/51621792/streaming-pipelines-with-bigquery-sinks-in-python
-    # Write data to BigQuery
-    # payload | beam.io.WriteToBigQuery(
-    #   table_spec,
-    #   schema=table_schema,
-    #   write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-    #   create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)
+    # END: API-sources nodes
+    #############################
 
      # Execute the Pipline
     result = p.run()
@@ -701,7 +707,7 @@ class ChannelAmpAvgFn(beam.DoFn):
   """
   # main process
   def process(self,element,window=beam.DoFn.WindowParam):
-    logging.debug("\n>>>>> ChannelAmpAvgFn(): Data dump -> {}".format(element))
+    logging.debug("\ngrpl>> ChannelAmpAvgFn(): Data dump -> {}".format(element))
 
     try:
       events = element[1]
@@ -717,7 +723,7 @@ class ChannelAmpAvgFn(beam.DoFn):
       psds.append(event[1])
       timestamps.append(event[0])
 
-    logging.debug(">>>>> ChannelAmpAvgFn(): PSDS -> {}".format(psds))
+    logging.debug("grpl>> ChannelAmpAvgFn(): PSDS -> {}".format(psds))
 
     # calculate channnel average
     if len(psds) != 0:
@@ -737,7 +743,7 @@ class ChannelAmpAvgFn(beam.DoFn):
     # create new (center_freq,(channel_avg,data_start,data_end)) tuple
     key_value = (element[0],(channel_avg,start,end))
 
-    logging.info(">>>>> ChannelAmpAvgFn(): Result -> {}".format(key_value))
+    logging.info("grpl>> ChannelAmpAvgFn(): Result -> {}".format(key_value))
     yield key_value
 
 class ChannelCongestionFn(beam.DoFn):
@@ -775,7 +781,7 @@ class ChannelCongestionFn(beam.DoFn):
     # create new (center_freq,(channel_avg,data_start,data_end)) tuple
     key_value = (element[0],(sum(counts),start,end))
 
-    logging.info(">>>>> ChannelCongestionFn(): Result -> {}".format(key_value))
+    logging.info("grpl>> ChannelCongestionFn(): Result -> {}".format(key_value))
     yield key_value
 
 class FormatPubsubOutFn(beam.DoFn):
@@ -790,10 +796,10 @@ class FormatPubsubOutFn(beam.DoFn):
   """
   # main process
   def process(self,element):#,window=beam.DoFn.WindowParam):
-    # logging.debug(">>>>> FormatPubsubOutFn(): Element -> {}".format(element))
+    # logging.debug("grpl>> FormatPubsubOutFn(): Element -> {}".format(element))
     jsonstr = "{{\'{cfreq}\': {data}}}".format(cfreq = element[0],data=element[1])
     jsonstr = jsonstr.replace("'", "\"")
-    logging.info(">>>>> FormatPubsubOutFn(): Dictionary -> {}".format(jsonstr))
+    logging.info("grpl>> FormatPubsubOutFn(): Dictionary -> {}".format(jsonstr))
 
     return [jsonstr]
 
@@ -804,7 +810,7 @@ class DebugOutputFn(beam.DoFn):
   """
   # main process
   def process(self,element):#,window=beam.DoFn.WindowParam):
-    # logging.info(">>>>> DebugOutputFn(): Result -> {}".format(element))
+    # logging.info("grpl>> DebugOutputFn(): Result -> {}".format(element))
     return None
 # END PARDOS
 ######################################################

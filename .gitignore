@@ -1,0 +1,2 @@
+# ignore build directory
+/gnuradio_source/gr-GooglePubSub/build/*
